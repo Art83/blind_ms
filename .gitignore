@@ -1,0 +1,4 @@
+data/*
+.venv/*
+.idea/*
+results_heavy/*
