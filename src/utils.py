@@ -7,7 +7,7 @@ import pandas as pd
 from numpy import ndarray, dtype
 from pandas import Series, DataFrame
 
-from config import TISSUES, SUBSITE_AGG, IHC_ABSENT, IHC_PRESENT, RELIABILITY_ORDER
+from config import TISSUES, SUBSITE_AGG, IHC_ABSENT, IHC_PRESENT, RELIABILITY_ORDER, PAXDB_DIR
 
 
 # General handling
@@ -22,6 +22,14 @@ def symbol_to_ensg(cross, tag="", verbose=True):
         print(f"map {tag} {len(c):,} symbol-ENSG pairs; {n_ambig:,} symbols "
               f"are ambiguous (>1 ENSG); {n_alt_dropped:,} alt rows dropped (kept first)")
     return c.drop_duplicates("symbol").set_index("symbol")["ensg"]
+
+
+
+def _attach_ensg(df: pd.DataFrame, cross: pd.DataFrame) -> pd.DataFrame:
+    sym2ensg = symbol_to_ensg(cross, tag="paxdb")
+    df = df.copy()
+    df["ensg"] = df["symbol"].map(sym2ensg)
+    return df
 
 
 def _agg_subsites(df: pd.DataFrame, cols: list[str], how: str) -> pd.Series:
@@ -99,3 +107,32 @@ def load_ihc(df: pd.DataFrame) -> tuple[Any, Any, Any, Any]:
     tissue_tbl = tissue_tbl.drop(columns=["best_rel_rank"])
 
     return gene_dict, celltype, tissue_tbl, level_audit
+
+
+# --- Paxdb processing
+def _read_paxdb_file(path) -> pd.DataFrame:
+    df = pd.read_csv(path, sep="\t", comment="#",
+                     names=["symbol", "string_id", "paxdb_ppm"], dtype=str)
+    df["paxdb_ppm"] = pd.to_numeric(df["paxdb_ppm"], errors="coerce")
+    df["ensp"] = df["string_id"].str.replace(r"^\d+\.", "", regex=True)  # drop 9606.
+    df = df.drop(columns=["string_id"]).dropna(subset=["paxdb_ppm"])
+    return df
+
+
+def load_paxdb(cross: pd.DataFrame):
+    rows = []
+    for tname, spec in TISSUES.items():
+        f = PAXDB_DIR / f"{spec['paxdb']}.txt"
+        if not f.exists():
+            print(f"  [skip] {tname}: {f.name} not present")
+            continue
+        d = _attach_ensg(_read_paxdb_file(f), cross)
+        d["tissue"] = tname
+        rows.append(d[["ensg", "tissue", "paxdb_ppm", "ensp", "symbol"]])
+    long = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
+
+    wb_path = PAXDB_DIR / "hs_whole_body.txt"
+    wb = _attach_ensg(_read_paxdb_file(wb_path), cross)
+    wb = wb.rename(columns={"paxdb_ppm": "paxdb_ppm_global"})[
+            ["ensg", "paxdb_ppm_global", "ensp", "symbol"]]
+    return long, wb
