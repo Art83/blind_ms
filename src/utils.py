@@ -1,8 +1,14 @@
 """
 Functions for project
 """
+from typing import Tuple, Any
+
 import pandas as pd
-from config import TISSUES, SUBSITE_AGG
+from numpy import ndarray, dtype
+from pandas import Series, DataFrame
+
+from config import TISSUES, SUBSITE_AGG, IHC_ABSENT, IHC_PRESENT, RELIABILITY_ORDER
+
 
 # General handling
 def symbol_to_ensg(cross, tag="", verbose=True):
@@ -46,3 +52,50 @@ def load_gtex(med: pd.DataFrame, ts:pd.DataFrame) -> (pd.DataFrame, pd.DataFrame
         rows.append(block)
     long = pd.concat(rows, ignore_index=True)
     return long, cross
+
+
+# HPA processing
+def _call_from_level(level: pd.Series) -> pd.Series:
+    out = pd.Series(pd.NA, index=level.index, dtype="object")
+    out[level.isin(IHC_PRESENT)] = "present"
+    out[level.isin(IHC_ABSENT)] = "absent"
+    return out
+
+
+def load_ihc(df: pd.DataFrame) -> tuple[Any, Any, Any, Any]:
+    df = df.rename(columns={"Gene": "ensg", "Gene name": "symbol",
+                            "Tissue": "hpa_tissue", "Cell type": "cell_type",
+                            "Level": "level", "Reliability": "reliability"})
+    for c in df.columns:
+        df[c] = df[c].str.strip()
+
+    level_audit = df["level"].value_counts(dropna=False).rename_axis("level").reset_index(name="rows")
+
+    gene_dict = (df[["ensg", "symbol"]].dropna().drop_duplicates().drop_duplicates("ensg"))
+
+    hpa2canon = {spec["hpa"]: t for t, spec in TISSUES.items()}
+    df = df[df["hpa_tissue"].isin(hpa2canon)].copy()
+    df["tissue"] = df["hpa_tissue"].map(hpa2canon)
+    df["ihc_call"] = _call_from_level(df["level"])
+
+    celltype = df[["ensg", "tissue", "cell_type", "ihc_call", "level", "reliability"]].copy()
+
+    # collapse cell types -> tissue level call
+    rel_rank = {r: i for i, r in enumerate(RELIABILITY_ORDER)}
+    scored = df[df["ihc_call"].notna()].copy()
+    scored["is_pos"] = (scored["ihc_call"] == "present").astype(int)
+    scored["rel_rank"] = scored["reliability"].map(rel_rank)
+
+    g = scored.groupby(["ensg", "tissue"])
+    tissue_tbl = g.agg(
+        n_celltypes=("ihc_call", "size"),
+        n_pos_celltypes=("is_pos", "sum"),
+        best_rel_rank=("rel_rank", "min"),
+    ).reset_index()
+    tissue_tbl["ihc_present"] = tissue_tbl["n_pos_celltypes"] > 0
+    tissue_tbl["frac_pos_celltypes"] = (tissue_tbl["n_pos_celltypes"] / tissue_tbl["n_celltypes"])
+    inv_rank = {i: r for r, i in rel_rank.items()}
+    tissue_tbl["best_reliability"] = tissue_tbl["best_rel_rank"].map(inv_rank)
+    tissue_tbl = tissue_tbl.drop(columns=["best_rel_rank"])
+
+    return gene_dict, celltype, tissue_tbl, level_audit
