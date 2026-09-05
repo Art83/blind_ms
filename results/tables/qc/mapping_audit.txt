@@ -1,0 +1,14 @@
+Mapping check: PaxDb whole body abundance, mapped vs unmapped
+
+total proteins (ppm>0): 19,483
+mapped to ENSG:   14,862 (76.3%)
+unmapped (dropped): 4,621 (23.7%)
+
+mapped:   median -0.20  IQR [-1.17, +0.84]  (log10 ppm)
+unmapped: median -1.20  IQR [-1.80, -0.30]  (log10 ppm)
+
+Mann-Whitney U: p=0.00e+00 rank-biserial=-0.388   (unmapped lower abundance)
+
+effect size is moderate.
+=> unmapped proteins skew lower-abundance dropping them makes the
+blind-spot estimate conservative.

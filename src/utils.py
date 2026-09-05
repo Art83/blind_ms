@@ -136,3 +136,62 @@ def load_paxdb(cross: pd.DataFrame):
     wb = wb.rename(columns={"paxdb_ppm": "paxdb_ppm_global"})[
             ["ensg", "paxdb_ppm_global", "ensp", "symbol"]]
     return long, wb
+
+
+
+
+
+
+# QC utils
+def audit(out):
+    import numpy as np
+    gd = pd.read_csv(out / "gene_dict.tsv", sep="\t", dtype=str)
+    sym2ensg = (gd.dropna(subset=["symbol", "ensg"]).drop_duplicates("symbol")
+                  .set_index("symbol")["ensg"])
+
+    wb = _read_paxdb_file(PAXDB_DIR / "hs_whole_body.txt")
+    wb = wb[wb["paxdb_ppm"] > 0].copy()
+    wb["ensg"] = wb["symbol"].map(sym2ensg)
+    wb["mapped"] = wb["ensg"].notna()
+    wb["log_ppm"] = np.log10(wb["paxdb_ppm"])
+    return wb
+
+
+def compare(wb) -> str:
+    m = wb.loc[wb["mapped"], "log_ppm"]
+    u = wb.loc[~wb["mapped"], "log_ppm"]
+    L = ["Mapping check: PaxDb whole body abundance, mapped vs unmapped", "",
+         f"total proteins (ppm>0): {len(wb):,}",
+         f"mapped to ENSG:   {len(m):,} ({len(m) / len(wb):.1%})",
+         f"unmapped (dropped): {len(u):,} ({len(u) / len(wb):.1%})", ""]
+    if len(u) < 20 or len(m) < 20:
+        L.append("too few in one group to test")
+        return "\n".join(L)
+
+    def q(s):
+        return (f"median {s.median():+.2f}  IQR [{s.quantile(.25):+.2f}, "
+                f"{s.quantile(.75):+.2f}]  (log10 ppm)")
+    L.append(f"mapped:   {q(m)}")
+    L.append(f"unmapped: {q(u)}")
+    L.append("")
+
+    from scipy.stats import mannwhitneyu
+    U, p = mannwhitneyu(m, u, alternative="two-sided")
+    rbc = 1 - 2 * U / (len(m) * len(u))
+    direction = ("unmapped lower abundance" if m.median() > u.median()
+                 else "unmapped higher abundance" if m.median() < u.median()
+                 else "no median difference")
+    L.append(f"Mann-Whitney U: p={p:.2e} rank-biserial={rbc:+.3f}   ({direction})")
+    L.append("")
+    mag = abs(rbc)
+    band = ("negligible" if mag < 0.1 else "small" if mag < 0.3
+            else "moderate" if mag < 0.5 else "large")
+    L.append(f"effect size is {band}.")
+    if mag < 0.1:
+        L.append("=> unmapped proteins are not materially different in abundance;")
+        L.append("the 16% loss is ignorable w.r.t. the dominant detectability axis.")
+    else:
+        lo = "lower" if m.median() > u.median() else "higher"
+        L.append(f"=> unmapped proteins skew {lo}-abundance dropping them makes the")
+        L.append(f"blind-spot estimate {'conservative' if lo=='lower' else 'anti-conservative'}.")
+    return "\n".join(L)

@@ -12,6 +12,7 @@ RES_DIR = PROJECT_DIR / "results"
 ML_DIR = RES_DIR / "ml"
 TAB_DIR = RES_DIR / "tables"
 PIC_DIR = RES_DIR / "pictures"
+QC_DIR = TAB_DIR / "qc"
 
 
 # --- Sources of protein data (all open access)
