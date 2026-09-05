@@ -1,0 +1,11 @@
+tissue	GTEx_only	IHC_only	both_absent	both_present
+cerebral_cortex	1566	1462	598	6483
+colon	1767	360	140	7811
+heart	3622	182	191	6113
+liver	3117	689	684	5620
+lung	2348	639	409	6710
+pancreas	2273	659	428	6739
+skin	2216	334	187	7371
+spleen	3769	466	587	5288
+stomach	1986	553	271	7300
+testis	1315	1442	353	7000

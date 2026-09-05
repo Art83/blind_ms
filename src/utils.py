@@ -4,9 +4,6 @@ Functions for project
 from typing import Tuple, Any
 
 import pandas as pd
-from numpy import ndarray, dtype
-from pandas import Series, DataFrame
-
 from config import TISSUES, SUBSITE_AGG, IHC_ABSENT, IHC_PRESENT, RELIABILITY_ORDER, PAXDB_DIR
 
 
@@ -22,7 +19,6 @@ def symbol_to_ensg(cross, tag="", verbose=True):
         print(f"map {tag} {len(c):,} symbol-ENSG pairs; {n_ambig:,} symbols "
               f"are ambiguous (>1 ENSG); {n_alt_dropped:,} alt rows dropped (kept first)")
     return c.drop_duplicates("symbol").set_index("symbol")["ensg"]
-
 
 
 def _attach_ensg(df: pd.DataFrame, cross: pd.DataFrame) -> pd.DataFrame:
@@ -138,8 +134,107 @@ def load_paxdb(cross: pd.DataFrame):
     return long, wb
 
 
+# Combining HPA, gtex, paxdb together
+def _load(out):
+    gene_dict = pd.read_csv(out / "gene_dict.tsv", sep="\t", dtype=str)
+    gtex = pd.read_csv(out / "gtex_long.tsv", sep="\t",
+                       dtype={"ensg": str, "tissue": str, "gtex_level": float})
+    gtex["gtex_measured"] = gtex["gtex_measured"].astype(str).str.lower().eq("true")
+    ihc = pd.read_csv(out / "ihc_tissue.tsv", sep="\t")
+    ihc["ensg"] = ihc["ensg"].astype(str)
+    ihc["ihc_present"] = ihc["ihc_present"].astype(str).str.lower().eq("true")
+    pax = pd.read_csv(out / "paxdb_long.tsv", sep="\t",
+                      dtype={"ensg": str, "tissue": str})
+    pax = pax.dropna(subset=["ensg"])
+    wb_path = out / "paxdb_wholebody.tsv"
+    wb = pd.read_csv(wb_path, sep="\t", dtype={"ensg": str}) if wb_path.exists() \
+        else pd.DataFrame(columns=["ensg", "paxdb_ppm_global"])
+    wb = wb.dropna(subset=["ensg"]).drop_duplicates("ensg")
+    return gene_dict, gtex, ihc, pax, wb
 
 
+def build_grid(out):
+    gene_dict, gtex, ihc, pax, wb = _load(out)
+
+    ihc_universe = set(gene_dict["ensg"])
+    gtex_universe = set(gtex["ensg"])
+    master = sorted(ihc_universe | gtex_universe)
+
+    tissues = list(TISSUES.keys())
+    tri = {t for t, s in TISSUES.items() if s["gtex"] is not None}
+
+    # skeleton
+    import itertools
+    grid = pd.DataFrame(itertools.product(master, tissues), columns=["ensg", "tissue"])
+    grid = grid.merge(gene_dict, on="ensg", how="left")
+
+    # --- IHC join ---
+    grid = grid.merge(
+        ihc[["ensg", "tissue", "ihc_present", "frac_pos_celltypes",
+             "n_celltypes", "n_pos_celltypes", "best_reliability"]],
+        on=["ensg", "tissue"], how="left")
+    in_hpa = grid["ensg"].isin(ihc_universe)
+    has_ihc_row = grid["ihc_present"].notna()
+    grid["ihc_status"] = "unscored"
+    grid.loc[~in_hpa, "ihc_status"] = "not_in_hpa"
+    grid.loc[has_ihc_row & (grid["ihc_present"] == True), "ihc_status"] = "present"
+    grid.loc[has_ihc_row & (grid["ihc_present"] == False), "ihc_status"] = "absent"
+
+    # --- GTEx join ---
+    grid = grid.merge(gtex[["ensg", "tissue", "gtex_level", "gtex_measured"]],
+                      on=["ensg", "tissue"], how="left")
+    in_gtex = grid["ensg"].isin(gtex_universe)
+    is_tri = grid["tissue"].isin(tri)
+    grid["gtex_status"] = "not_applicable"
+    grid.loc[is_tri & ~in_gtex, "gtex_status"] = "not_measured"
+    grid.loc[is_tri & in_gtex & (grid["gtex_measured"] == True), "gtex_status"] = "measured"
+    grid.loc[is_tri & in_gtex & (grid["gtex_measured"] != True), "gtex_status"] = "measured_absent"
+
+    # --- PaxDb join ---
+    grid = grid.merge(pax[["ensg", "tissue", "paxdb_ppm"]].drop_duplicates(["ensg", "tissue"]),
+                      on=["ensg", "tissue"], how="left")
+    grid = grid.merge(wb[["ensg", "paxdb_ppm_global"]], on="ensg", how="left")
+    grid["paxdb_present"] = grid["paxdb_ppm"].notna()
+
+    # --- agreement class (ihc x gtex) ---
+    ic = grid["ihc_status"]
+    gc = grid["gtex_status"]
+    grid["agreement_class"] = pd.NA
+    grid.loc[(ic == "present") & (gc == "measured"), "agreement_class"] = "both_present"
+    grid.loc[(ic == "absent") & (gc == "measured_absent"), "agreement_class"] = "both_absent"
+    grid.loc[(ic == "present") & (gc == "measured_absent"), "agreement_class"] = "IHC_only"
+    grid.loc[(ic == "absent") & (gc == "measured"), "agreement_class"] = "GTEx_only"
+
+    grid["ms_dark_candidate"] = (ic == "present") & gc.isin(["measured_absent", "not_measured"])
+
+    cols = ["ensg", "symbol", "tissue",
+            "ihc_status", "ihc_present", "frac_pos_celltypes",
+            "n_celltypes", "n_pos_celltypes", "best_reliability",
+            "gtex_status", "gtex_level",
+            "paxdb_present", "paxdb_ppm", "paxdb_ppm_global",
+            "agreement_class", "ms_dark_candidate"]
+    return grid[cols], tri
+
+
+def _qc(grid) -> str:
+    L = [f"grid rows: {len(grid):,}  "
+         f"({grid['ensg'].nunique():,} genes x {grid['tissue'].nunique()} tissues)", "",
+         "ihc_status:", grid["ihc_status"].value_counts(dropna=False).to_string(), "", "gtex_status:",
+         grid["gtex_status"].value_counts(dropna=False).to_string(), "", "agreement_class (tri-source tissues only):",
+         grid["agreement_class"].value_counts(dropna=False).to_string(), "",
+         f"ms_dark_candidates: {int(grid['ms_dark_candidate'].sum()):,}"]
+    md = grid[grid["ms_dark_candidate"]]
+    L.append("by gtex_status:")
+    L.append("  " + md["gtex_status"].value_counts().to_string().replace("\n", "\n  "))
+    L.append("")
+    # PaxDb abundance coverage among IHC-present grid rows
+    ihc_pos = grid[grid["ihc_status"] == "present"]
+    cov_tissue = ihc_pos["paxdb_ppm"].notna().mean() if len(ihc_pos) else float("nan")
+    cov_any = (ihc_pos["paxdb_ppm"].notna() | ihc_pos["paxdb_ppm_global"].notna()).mean() if len(ihc_pos) else float("nan")
+    L.append("PaxDb abundance coverage among IHC-present rows:")
+    L.append(f"tissue-matched ppm: {cov_tissue:.1%}")
+    L.append(f"tissue or whole-body ppm: {cov_any:.1%}")
+    return "\n".join(L)
 
 
 # QC utils

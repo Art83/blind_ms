@@ -1,0 +1,33 @@
+grid rows: 206,460  (17,205 genes x 12 tissues)
+
+ihc_status:
+ihc_status
+present       110567
+absent         51017
+not_in_hpa     22716
+unscored       22160
+
+gtex_status:
+gtex_status
+measured           109008
+not_measured        45780
+not_applicable      34410
+measured_absent     17262
+
+agreement_class (tri-source tissues only):
+agreement_class
+<NA>            105412
+both_present     66435
+GTEx_only        23979
+IHC_only          6786
+both_absent       3848
+
+ms_dark_candidates: 25,962
+by gtex_status:
+  gtex_status
+  not_measured       19176
+  measured_absent     6786
+
+PaxDb abundance coverage among IHC-present rows:
+tissue-matched ppm: 81.7%
+tissue or whole-body ppm: 98.2%

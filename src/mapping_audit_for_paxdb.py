@@ -2,7 +2,7 @@
 Checking mapping for the PaxDb symbol->ENSG join.
 
 Note for motivation:
-~16% of PaxDb proteins have a symbol that does not resolve to an ENSG in the HPA
+~24% of PaxDb proteins have a symbol that does not resolve to an ENSG in the HPA
 gene dictionary and are silently dropped before modelling. Ambiguous symbols are
 negligible, so the question that matters for bias is whether the
 unmapped proteins differ from the mapped ones on abundance (main contributor to detection).
