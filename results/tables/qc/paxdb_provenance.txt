@@ -1,0 +1,18 @@
+paxdb provenance: Jiang 2020 (GTEx-MS, the label) inside the abundance covariate
+
+tissue            Jiang w inputs  AUC tissue ppm AUC global ppmcov tissue cov global top input
+cerebral_cortex     0.699      3         0.924          0.865     77.7%      98.2%PXD016999_Jiang_Cell_2020_Brain_Cortex-ppm (0.70)
+spleen              0.353      4         0.802          0.843     78.7%      98.3%PXD016999_Jiang_Cell_2020_Spleen-ppm (0.35)
+stomach             0.303      4         0.838          0.851     79.8%      98.1%PXD010154_Wang_Mol_Syst_Bio_2019_human_deep_proteome_Stomach (0.38)
+testis              0.136      8         0.879          0.864     88.9%      98.0%PXD010246_testis (0.39)
+colon               0.039      8         0.756          0.845     82.7%      98.2%Adult_Colon_Kim_2014_SEQUEST (0.60)
+pancreas            0.039      5         0.774          0.856     81.6%      98.1%Adult_Pancreas_Kim_2014_SEQUEST (0.44)
+skin                0.027     13         0.766          0.842     83.2%      98.2%PXD027093_stratum_corneum (0.29)
+liver               0.018     13         0.790          0.857     91.5%      98.1%Adult_Liver_Kim_2014_SEQUEST (0.22)
+lung                0.017      8         0.775          0.856     84.8%      98.2%Adult_Lung_Kim_2014_SEQUEST (0.38)
+heart               0.000      8         0.716          0.838     81.8%      98.2%Adult_Heart_Kim_2014_SEQUEST (0.62)
+
+Spearman(Jiang weight, abundance only AUC): tissue ppm r=+0.75 p=0.013 global ppm r=+0.36 p=0.309
+whole body dataset: 7 inputs, Jiang weight 0.000, PeptideAtlas-derived weight 0.91
+
+side panels (no gtex column): 

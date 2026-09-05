@@ -290,3 +290,83 @@ def compare(wb) -> str:
         L.append(f"=> unmapped proteins skew {lo}-abundance dropping them makes the")
         L.append(f"blind-spot estimate {'conservative' if lo=='lower' else 'anti-conservative'}.")
     return "\n".join(L)
+
+
+# coverage bias
+def _build(out):
+    grid = pd.read_csv(out / "grid.tsv", sep="\t")
+    tri = {t for t, s in TISSUES.items() if s["gtex"] is not None}
+    m = grid[(grid["ihc_status"] == "present") & (grid["tissue"].isin(tri))].copy()
+
+    # same abundance definition as model_msdark (tissue ppm, whole-body fallback),
+    # but don't drop the uncovered
+    ab = m["paxdb_ppm"].where(m["paxdb_ppm"].notna(), m["paxdb_ppm_global"])
+    m["abundance_covered"] = ab.notna() & (ab > 0)
+    # MS-dark outcome, identical coding to model_msdark (0 = dark here)
+    m["gtex_detected"] = (m["gtex_status"] == "measured").astype(int)
+    m["ms_dark"] = 1 - m["gtex_detected"]
+    return m
+
+
+def _report(m) -> str:
+    cov = m[m["abundance_covered"]]
+    drop = m[~m["abundance_covered"]]
+    N = len(m)
+    L = ["Abundance coverage bias control (IHC-present tri-source rows)", "", f"IHC-present rows: {N:,}",
+         f"abundance-covered (modelled): {len(cov):,} ({len(cov) / N:.1%})",
+         f"dropped for no ppm: {len(drop):,} ({len(drop) / N:.1%})", ""]
+    if len(drop) < 20:
+        L.append("too few dropped rows to test -> loss is negligible by count")
+        return "\n".join(L)
+
+    dark_cov = cov["ms_dark"].mean()
+    dark_drop = drop["ms_dark"].mean()
+    L.append(f"MS-dark rate, covered: {dark_cov:.1%}")
+    L.append(f"MS-dark rate, dropped: {dark_drop:.1%}")
+    L.append(f"difference (dropped - covered): {dark_drop - dark_cov:+.1%}")
+    L.append("")
+
+    # 2x2: covered/dropped x dark/detected.  Fisher for enrichment
+    from scipy.stats import fisher_exact
+    a = int((drop["ms_dark"] == 1).sum()); b = int((drop["ms_dark"] == 0).sum())
+    c = int((cov["ms_dark"] == 1).sum());  d = int((cov["ms_dark"] == 0).sum())
+    orr, p = fisher_exact([[a, b], [c, d]], alternative="two-sided")
+    L.append(f"Fisher exact (dropped enriched for dark?): OR={orr:.2f}  p={p:.2e}")
+    L.append("")
+    if p >= 0.05:
+        L.append("dropped rows are not differentially MS-dark")
+        L.append("loss is inert w.r.t. the blind-spot estimate.")
+    elif orr > 1:
+        L.append("dropped rows are enriched for MS-dark: the cross-atlas identifier")
+    else:
+        L.append("dropped rows are less often MS-dark (OR<1), loss mildly inflates")
+    return "\n".join(L)
+
+
+# PAxdb vs gtex weight
+def _auc(y, x):
+    from sklearn.metrics import roc_auc_score
+    import numpy as np
+    m = np.isfinite(x)
+    return float(roc_auc_score(y[m], x[m])) if len(np.unique(y[m])) > 1 else float("nan")
+
+
+def _read_weights(path):
+    if not path.exists():
+        print(f"missing {path.name}]")
+        return {}
+    with open(path, encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            if not line.startswith("#"):
+                break
+            if line.startswith("#weights:"):
+                body = line.split(":", 1)[1].strip().rstrip(";")
+                out = {}
+                for item in body.split(";"):
+                    if ":" in item:
+                        k, v = item.rsplit(":", 1)
+                        out[k.strip()] = float(v)
+                return out
+    return {}
+
+

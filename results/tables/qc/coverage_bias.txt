@@ -1,0 +1,13 @@
+Abundance coverage bias control (IHC-present tri-source rows)
+
+IHC-present rows: 92,397
+abundance-covered (modelled): 90,707 (98.2%)
+dropped for no ppm: 1,690 (1.8%)
+
+MS-dark rate, covered: 27.6%
+MS-dark rate, dropped: 53.7%
+difference (dropped - covered): +26.1%
+
+Fisher exact (dropped enriched for dark?): OR=3.04  p=2.66e-110
+
+dropped rows are enriched for MS-dark: the cross-atlas identifier
