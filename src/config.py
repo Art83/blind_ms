@@ -65,7 +65,4 @@ GTEX_NA = {"NA", "NaN", ""}
 ISOFORM_PICK = "longest"
 
 
-# Protein features configs
-PE_LEVEL = {"Evidence at protein level": 1, "Evidence at transcript level": 2,
-            "Inferred from homology": 3, "Predicted": 4, "Uncertain": 5}
 

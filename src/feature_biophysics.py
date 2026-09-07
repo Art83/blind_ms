@@ -9,79 +9,43 @@ Features and why (subject to change):
   has_signal       signal peptide present -> secreted/membrane routing, MS-hostile
   n_tryptic_7_30   in-silico tryptic peptides 7-30 aa -> MS optimum range
   tryptic_per_kda  peptide density -> few peptides = few chances to detect
+
+  mature_start/end  mature chain
+  n_glyco_sites   glycosylation sites
+  n_mod_res       modified residues. Doesn't go to ML: 27% of MOD_RES
+                  sites are transfers from orthologs observed
+                  by MS
+  n_disulfide     disulfide bonds.
+  n_lipid_sites   lipidation sites.
+  n_*_observed    the same counts restricted to experimental or large-scale
+                  proteomics evidence (ECO:0000269, ECO:0007744). Mot feature
+  has_propeptide  any propep annotation
+  pe_level        Protein existence, 1-5
+  localisation    from uniprot's Subcellular location [CC]
 """
 
 from __future__ import annotations
-import pandas as pd
-from utils_features import _gravy, _ensg_from_xref, _pI, _tryptic_7_30
-from config import DATA_DIR, TAB_DIR, ISOFORM_PICK
-from utils import symbol_to_ensg
-import uniprot_annot as UA
-import re
-
+from utils_features import build_features
+from config import DATA_DIR, TAB_DIR
 
 UNIPROT_TSV = DATA_DIR / "uniprot_human.tsv"
 GENE_DICT = TAB_DIR / "gene_dict.tsv"
+GENE_FEATURES = DATA_DIR / "gene_features.tsv"
 
-
-def build_features(path_uniprot, path_gene_dict) -> pd.DataFrame:
-    df = pd.read_csv(path_uniprot, sep="\t", dtype=str, keep_default_na=False, na_values=[])
-    gene_dict = pd.read_csv(path_gene_dict, sep="\t", dtype=str)
-    # Columns for the job
-    # Annotation , ensg is a nightmare, need to parse
-    c_acc = "Entry"
-    c_gene = "Gene Names (primary)"
-    c_ens = "Ensembl"
-
-    # features
-    c_seq = "Sequence"
-    c_len = "Length"
-    c_mass = "Mass"
-    c_tm = "Transmembrane"
-    c_sig = "Signal peptide"
-
-    sym2ensg = symbol_to_ensg(gene_dict, tag="uniprot")
-
-    have_chain = all(c in list(df.columns) for c in ("Chain", "Propeptide"))
-
-    rows = []
-    n_mapped = 0
-    for _, r in df.iterrows():
-        seq = (r[c_seq] or "").strip().upper()
-        if not seq:
-            continue
-        sym = (r[c_gene] or "").strip().split()[0] if r[c_gene] else None
-        ensg = sym2ensg.get(sym) if sym else None
-        if ensg is None and c_ens:
-            xr = _ensg_from_xref(r[c_ens])
-            ensg = xr[0] if xr else None
-        if ensg is None:
-            continue
-        n_mapped += 1
-        mw = pd.to_numeric(str(r[c_mass]).replace(",", ""), errors="coerce") if c_mass else float("nan")
-        length = int(pd.to_numeric(r[c_len], errors="coerce")) if c_len and r[c_len] else len(seq)
-        rd = r.to_dict()
-        m_start, m_end = UA.mature_range(rd, len(seq)) if have_chain else (1, len(seq))
-        mature = seq[m_start - 1:m_end]
-        feat = dict(
-            ensg=ensg,
-            uniprot=r[c_acc] if c_acc else "",
-            length=length,
-            mw_da=mw,
-            gravy=round(_gravy(mature), 4),
-            pI=_pI(mature),
-            n_tm=len(re.findall(r"TRANSMEM", r[c_tm])) if c_tm else 0,
-            has_signal=int(bool((r[c_sig] or "").strip())) if c_sig else 0,
-            n_tryptic_7_30=_tryptic_7_30(seq, m_start, m_end)
-        )
-        kda = (feat["mw_da"] / 1000.0) if pd.notna(feat["mw_da"]) and feat["mw_da"] else (feat["length"] * 0.11)
-        feat["tryptic_per_kda"] = round(feat["n_tryptic_7_30"] / kda, 4) if kda else float("nan")
-        rows.append(feat)
-
-    feats = pd.DataFrame(rows)
-    return feats
-
-
-print(build_features(UNIPROT_TSV, GENE_DICT))
-
-
+feats = build_features(UNIPROT_TSV, GENE_DICT, GENE_FEATURES)
+feats.to_csv(TAB_DIR / "features_protein.tsv", sep="\t", index=False)
+# Summary for qc
+print(f"features_protein: {len(feats):,} ENSG")
+print(f"with TM>0: {int((feats['n_tm'] > 0).sum()):,}  "
+      f"| with signal: {int(feats['has_signal'].sum()):,}  "
+      f"| mature chain shorter than precursor: {int((feats['mature_length'] < feats['length']).sum()):,}")
+print(f"  predicted (features): glyco sites {int((feats['n_glyco_sites'] > 0).sum()):,}, "
+      f"modified residues {int((feats['n_mod_res'] > 0).sum()):,}, "
+      f"disulfides {int((feats['n_disulfide'] > 0).sum()):,}, "
+      f"lipidation {int((feats['n_lipid_sites'] > 0).sum()):,}, "
+      f"propeptide {int(feats['has_propeptide'].sum()):,}")
+print(f"observed (never features): modified residues {int((feats['n_mod_res_observed'] > 0).sum()):,}, "
+      f"glyco {int((feats['n_glyco_sites_observed'] > 0).sum()):,}, "
+      f"disulfides {int((feats['n_disulfide_observed'] > 0).sum()):,}")
+print(f"median length {feats['length'].median():.0f} aa, "
+      f"median tryptic(7-30) {feats['n_tryptic_7_30'].median():.0f}")
