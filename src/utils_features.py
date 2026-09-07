@@ -53,3 +53,18 @@ def _pI(seq):
             hi = mid
     return round((lo + hi) / 2, 2)
 
+
+def _tryptic_7_30(seq, start=1, end=None):
+    if not seq:
+        return 0
+    end = end or len(seq)
+    pos, n = 0, 0
+    for frag in re.split(r"(?<=[KR])(?!P)", seq):
+        if not frag:
+            continue
+        a, b = pos + 1, pos + len(frag)
+        pos += len(frag)
+        if 7 <= len(frag) <= 30 and a >= start and b <= end:
+            n += 1
+    return n
+

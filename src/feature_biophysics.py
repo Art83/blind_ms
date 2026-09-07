@@ -5,12 +5,15 @@ Features and why (subject to change):
   gravy            Kyte-Doolittle hydropathy  -> hydrophobic = MS-hostile
   length, mw_da    Length and mol weight (probably ratio) -> small proteins evade MS
   pI               isoelectric point -> chromatography effect, binding to resins
-  n_tm            transmembrane region count  -> MS-hostile (aggregation, poor digest)
+  n_tm             transmembrane region count  -> MS-hostile (aggregation, poor digest)
+  has_signal       signal peptide present -> secreted/membrane routing, MS-hostile
+  n_tryptic_7_30   in-silico tryptic peptides 7-30 aa -> MS optimum range
+  tryptic_per_kda  peptide density -> few peptides = few chances to detect
 """
 
 from __future__ import annotations
 import pandas as pd
-from utils_features import _gravy, _ensg_from_xref, _pI
+from utils_features import _gravy, _ensg_from_xref, _pI, _tryptic_7_30
 from config import DATA_DIR, TAB_DIR, ISOFORM_PICK
 from utils import symbol_to_ensg
 import uniprot_annot as UA
@@ -35,6 +38,7 @@ def build_features(path_uniprot, path_gene_dict) -> pd.DataFrame:
     c_len = "Length"
     c_mass = "Mass"
     c_tm = "Transmembrane"
+    c_sig = "Signal peptide"
 
     sym2ensg = symbol_to_ensg(gene_dict, tag="uniprot")
 
@@ -64,10 +68,14 @@ def build_features(path_uniprot, path_gene_dict) -> pd.DataFrame:
             uniprot=r[c_acc] if c_acc else "",
             length=length,
             mw_da=mw,
-            gravy=round(_gravy(seq), 4),
+            gravy=round(_gravy(mature), 4),
             pI=_pI(mature),
             n_tm=len(re.findall(r"TRANSMEM", r[c_tm])) if c_tm else 0,
+            has_signal=int(bool((r[c_sig] or "").strip())) if c_sig else 0,
+            n_tryptic_7_30=_tryptic_7_30(seq, m_start, m_end)
         )
+        kda = (feat["mw_da"] / 1000.0) if pd.notna(feat["mw_da"]) and feat["mw_da"] else (feat["length"] * 0.11)
+        feat["tryptic_per_kda"] = round(feat["n_tryptic_7_30"] / kda, 4) if kda else float("nan")
         rows.append(feat)
 
     feats = pd.DataFrame(rows)
