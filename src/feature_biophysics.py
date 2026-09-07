@@ -2,15 +2,19 @@
 Building a per-protein biophysics feature table keyed to MS-detectability model.
 
 Features and why (subject to change):
-  hydrop  Kyte-Doolittle hydropathy  -> hydrophobic = MS-hostile
-  length
+  gravy            Kyte-Doolittle hydropathy  -> hydrophobic = MS-hostile
+  length, mw_da    Length and mol weight (probably ratio) -> small proteins evade MS
+  pI               isoelectric point -> chromatography effect, binding to resins
+  n_tm            transmembrane region count  -> MS-hostile (aggregation, poor digest)
 """
 
 from __future__ import annotations
 import pandas as pd
-from utils_features import _hydropathy, _ensg_from_xref
+from utils_features import _gravy, _ensg_from_xref, _pI
 from config import DATA_DIR, TAB_DIR, ISOFORM_PICK
 from utils import symbol_to_ensg
+import uniprot_annot as UA
+import re
 
 
 UNIPROT_TSV = DATA_DIR / "uniprot_human.tsv"
@@ -30,8 +34,11 @@ def build_features(path_uniprot, path_gene_dict) -> pd.DataFrame:
     c_seq = "Sequence"
     c_len = "Length"
     c_mass = "Mass"
+    c_tm = "Transmembrane"
 
     sym2ensg = symbol_to_ensg(gene_dict, tag="uniprot")
+
+    have_chain = all(c in list(df.columns) for c in ("Chain", "Propeptide"))
 
     rows = []
     n_mapped = 0
@@ -49,12 +56,17 @@ def build_features(path_uniprot, path_gene_dict) -> pd.DataFrame:
         n_mapped += 1
         mw = pd.to_numeric(str(r[c_mass]).replace(",", ""), errors="coerce") if c_mass else float("nan")
         length = int(pd.to_numeric(r[c_len], errors="coerce")) if c_len and r[c_len] else len(seq)
+        rd = r.to_dict()
+        m_start, m_end = UA.mature_range(rd, len(seq)) if have_chain else (1, len(seq))
+        mature = seq[m_start - 1:m_end]
         feat = dict(
             ensg=ensg,
             uniprot=r[c_acc] if c_acc else "",
             length=length,
             mw_da=mw,
-            hydrop=round(_hydropathy(seq), 4)
+            gravy=round(_gravy(seq), 4),
+            pI=_pI(mature),
+            n_tm=len(re.findall(r"TRANSMEM", r[c_tm])) if c_tm else 0,
         )
         rows.append(feat)
 
