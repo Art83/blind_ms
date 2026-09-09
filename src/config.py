@@ -52,7 +52,7 @@ TISSUES = {
 # present = positive call, absent = real negative, NA = unscored/unknown.
 # "Ascending"/"Descending" are non-standard -> treated as NA
 IHC_PRESENT = {"Low", "Medium", "High"}
-IHC_ABSENT  = {"Not detected"}
+IHC_ABSENT = {"Not detected"}
 IHC_NA = {"N/A", "Not representative", "Ascending", "Descending"}
 
 # reliability confidence, high -> low
@@ -63,6 +63,9 @@ GTEX_NA = {"NA", "NaN", ""}
 
 # "longest" || "shortest" isoform sensitivity
 ISOFORM_PICK = "longest"
+
+# paxdb related variable. whole body ("global") vs "tissue"
+ABUNDANCE_SOURCE = "global"
 
 
 

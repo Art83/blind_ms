@@ -1,6 +1,6 @@
 # MS Blind-Spot Analysis
 
-This study answers why does shotgun mass spectrometry miss proteins that are
+This study asks why does shotgun mass spectrometry miss proteins that are
 present in a tissue? Analysis harmonises three independent open consortia
 (GTEx-MS body map proteome, Human Protein Atlas antibody/IHC data, PaxDb
 abundance), determines proteins that IHC says are genuinely present, and asks which
@@ -27,7 +27,7 @@ if all necessary files are in `data/` (see more below), pipeline should be fully
 
 
 ## Data provenance 
-All dataset are in open access and can be downloaded without any user agreements. The only exception is iPSC datasets.
+All datasets are in open access and can be downloaded without any user agreements. The only exception is iPSC data.
 - **GTEx-MS**: Jiang et al. 2020, Cell, PXD016999.
 - **HPA IHC**: `normal_ihc_data.tsv`, HPA release 25.0
 - **PaxDb**: integrated datasets, publication_year 2025 per file header. Per-tissue input weights are in each file's `#weights` line and summarised in `paxdb_provenance.tsv`

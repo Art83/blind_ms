@@ -1,0 +1,65 @@
+model_table: 89,043 IHC-present tri-source observations (12,318 genes)
+abundance covariate: global PaxDb ppm (100.0% primary, rest fallback)
+biophysics feature coverage: 98.2%
+outcome gtex_detected mean (=fraction MS-bright): 0.730
+by type:
+type
+measured           64960
+not_measured       17480
+measured_absent     6603
+
+=== feature contrasts by type ===
+           type     n  frac_TM_pos  frac_signal  med_gravy  med_log_tryptic  med_log_abundance  med_frac_pos_ct  med_reliability_ord  frac_uncertain
+       measured 64960        0.184        0.106     -0.424            1.342              0.572              1.0                  1.0           0.151
+measured_absent  6603        0.244        0.103     -0.438            1.342             -0.827              1.0                  1.0           0.267
+   not_measured 17480        0.307        0.126     -0.398            1.255             -1.180              1.0                  1.0           0.316
+
+=== models ===
+--- pooled: measured vs (measured_absent|not_measured)  (n=89,043, MS-bright frac 0.730) ---
+AUC baseline 0.8698 -> full 0.8874
+coef (full, gene-clustered SE):
+         log_abundance  beta=+2.089  p=0.00e+00
+    frac_pos_celltypes  beta=+0.032  p=3.92e-02
+                 gravy  beta=+0.063  p=3.17e-02
+                log_mw  beta=+0.056  p=4.58e-01
+           log_tryptic  beta=+0.606  p=3.68e-16
+                  n_tm  beta=+0.033  p=2.03e-01
+            has_signal  beta=+0.276  p=2.51e-04
+       reliability_ord  beta=+0.166  p=2.16e-11
+
+--- Chemistry: measured vs not_measured  (n=82,440, MS-bright frac 0.788) ---
+AUC baseline 0.8764 -> full 0.8963
+coef (full, gene-clustered SE):
+         log_abundance  beta=+2.157  p=1.72e-282
+    frac_pos_celltypes  beta=+0.038  p=4.48e-02
+                 gravy  beta=+0.059  p=1.11e-01
+                log_mw  beta=+0.092  p=3.11e-01
+           log_tryptic  beta=+0.657  p=1.16e-13
+                  n_tm  beta=+0.025  p=4.35e-01
+            has_signal  beta=+0.261  p=4.44e-03
+       reliability_ord  beta=+0.175  p=2.74e-08
+
+--- Dilution: measured vs measured_absent  (n=71,563, MS-bright frac 0.908) ---
+AUC baseline 0.8650 -> full 0.8760
+coef (full, gene-clustered SE):
+         log_abundance  beta=+1.678  p=0.00e+00
+    frac_pos_celltypes  beta=+0.004  p=8.20e-01
+                 gravy  beta=+0.085  p=9.88e-03
+                log_mw  beta=+0.048  p=5.73e-01
+           log_tryptic  beta=+0.348  p=3.46e-05
+                  n_tm  beta=+0.049  p=1.08e-01
+            has_signal  beta=+0.354  p=2.93e-04
+       reliability_ord  beta=+0.157  p=2.30e-07
+
+=== abundance-source sensitivity (Chemistry, other PaxDb source) ===
+--- Chemistry with tissue abundance  (n=71,062, MS-bright frac 0.891) ---
+AUC baseline 0.8245 -> full 0.8452
+coef (full, gene-clustered SE):
+         log_abundance  beta=+1.409  p=0.00e+00
+    frac_pos_celltypes  beta=+0.082  p=6.53e-05
+                 gravy  beta=-0.091  p=1.93e-02
+                log_mw  beta=+0.116  p=2.25e-01
+           log_tryptic  beta=+0.345  p=2.35e-04
+                  n_tm  beta=-0.042  p=2.07e-01
+            has_signal  beta=+0.103  p=2.75e-01
+       reliability_ord  beta=+0.175  p=1.06e-07
