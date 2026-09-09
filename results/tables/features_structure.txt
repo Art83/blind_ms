@@ -1,0 +1,4 @@
+STRUCTURE AND TURNOVER FEATURES
+
+AlphaFold: cached alphafold_plddt_summary.tsv, 14,801 of 14,826 UniProt-mapped genes covered
+Half-life: 5,866 of 14,826 genes covered (39.6%), median 72 h
