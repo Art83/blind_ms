@@ -39,7 +39,7 @@ print(f"features_protein: {len(feats):,} ENSG")
 print(f"with TM>0: {int((feats['n_tm'] > 0).sum()):,}  "
       f"| with signal: {int(feats['has_signal'].sum()):,}  "
       f"| mature chain shorter than precursor: {int((feats['mature_length'] < feats['length']).sum()):,}")
-print(f"  predicted (features): glyco sites {int((feats['n_glyco_sites'] > 0).sum()):,}, "
+print(f"predicted (features): glyco sites {int((feats['n_glyco_sites'] > 0).sum()):,}, "
       f"modified residues {int((feats['n_mod_res'] > 0).sum()):,}, "
       f"disulfides {int((feats['n_disulfide'] > 0).sum()):,}, "
       f"lipidation {int((feats['n_lipid_sites'] > 0).sum()):,}, "

@@ -196,3 +196,137 @@ def build_features(path_uniprot, path_gene_dict, path_gene_features):
         print("gene_features.csv not found -> tryptic + UniProt features only")
     return feats
 
+
+# Transcript level features
+HUMAN_CODON_W = {
+    # Phe
+    'TTT': 0.452, 'TTC': 1.000,
+    # Leu
+    'TTA': 0.128, 'TTG': 0.206, 'CTT': 0.206, 'CTC': 0.317,
+    'CTA': 0.115, 'CTG': 1.000,
+    # Ile
+    'ATT': 0.490, 'ATC': 1.000, 'ATA': 0.243,
+    # Met
+    'ATG': 1.000,
+    # Val
+    'GTT': 0.261, 'GTC': 0.419, 'GTA': 0.165, 'GTG': 1.000,
+    # Ser
+    'TCT': 0.621, 'TCC': 0.724, 'TCA': 0.483, 'TCG': 0.172,
+    'AGT': 0.483, 'AGC': 1.000,
+    # Pro
+    'CCT': 0.586, 'CCC': 1.000, 'CCA': 0.552, 'CCG': 0.207,
+    # Thr
+    'ACT': 0.480, 'ACC': 1.000, 'ACA': 0.560, 'ACG': 0.240,
+    # Ala
+    'GCT': 0.519, 'GCC': 1.000, 'GCA': 0.444, 'GCG': 0.185,
+    # Tyr
+    'TAT': 0.434, 'TAC': 1.000,
+    # Stop codons (excluded from CAI)
+    'TAA': 0.0, 'TAG': 0.0, 'TGA': 0.0,
+    # His
+    'CAT': 0.424, 'CAC': 1.000,
+    # Gln
+    'CAA': 0.346, 'CAG': 1.000,
+    # Asn
+    'AAT': 0.465, 'AAC': 1.000,
+    # Lys
+    'AAA': 0.432, 'AAG': 1.000,
+    # Asp
+    'GAT': 0.464, 'GAC': 1.000,
+    # Glu
+    'GAA': 0.427, 'GAG': 1.000,
+    # Cys
+    'TGT': 0.449, 'TGC': 1.000,
+    # Trp
+    'TGG': 1.000,
+    # Arg
+    'CGT': 0.159, 'CGC': 0.376, 'CGA': 0.200, 'CGG': 0.376,
+    'AGA': 0.753, 'AGG': 1.000,
+    # Gly
+    'GGT': 0.282, 'GGC': 0.595, 'GGA': 0.416, 'GGG': 1.000,
+}
+STOP = {"TAA", "TAG", "TGA"}
+
+
+def cai(cds):
+    import math
+    log_sum, n = 0.0, 0
+    for i in range(0, len(cds) - 2, 3):
+        codon = cds[i:i + 3]
+        if len(codon) < 3 or codon in STOP:
+            break
+        w = HUMAN_CODON_W.get(codon)
+        if w is not None and w > 0:
+            log_sum += math.log(w)
+            n += 1
+    return math.exp(log_sum / n) if n else 0.0
+
+
+def kozak_score(seq, atg):
+    checks = [(-3, ("A", "G"), 3.0), (3, ("G",), 2.0), (-1, ("C",), 1.0), (-2, ("C",), 1.0),
+              (-4, ("A", "G"), 0.5), (-5, ("A", "G"), 0.5)]
+    score = total = 0.0
+    for off, ok, w in checks:
+        total += w
+        p = atg + off
+        if 0 <= p < len(seq) and seq[p] in ok:
+            score += w
+    return score / total if total else 0.0
+
+
+def find_cds(seq):
+    best = None
+    for m in re.finditer("ATG", seq):
+        start = m.start()
+        for j in range(start, len(seq) - 2, 3):
+            if seq[j:j + 3] in STOP:
+                if j - start >= 30 and (best is None or j - start > best[1] - best[0]):
+                    best = (start, j)
+                break
+    return best
+
+
+def cdna_record(ensg, seq):
+    L = len(seq)
+    if L == 0:
+        return None
+    rec = {"ensg": ensg, "manual_gc_content": (seq.count("G") + seq.count("C")) / L * 100,
+           "cai": float("nan"), "kozak_score": float("nan"), "utr5_length": float("nan"),
+           "utr3_length": float("nan"), "cds_length": float("nan"), "utr5_gc": float("nan"),
+           "utr3_gc": float("nan"), "utr3_to_cds_ratio": float("nan")}
+    orf = find_cds(seq)
+    if orf is None:
+        return rec
+    atg, stop = orf
+    cds = seq[atg:stop]
+    utr3_start = stop + 3
+    utr5, utr3 = seq[:atg], seq[utr3_start:]
+    rec.update(cai=cai(cds), kozak_score=kozak_score(seq, atg), utr5_length=atg,
+               utr3_length=max(0, L - utr3_start), cds_length=stop - atg,
+               utr5_gc=((utr5.count("G") + utr5.count("C")) / len(utr5) * 100) if utr5 else float("nan"),
+               utr3_gc=((utr3.count("G") + utr3.count("C")) / len(utr3) * 100) if utr3 else float("nan"),
+               utr3_to_cds_ratio=max(0, L - utr3_start) / (stop - atg))
+    return rec
+
+
+def parse_cdna(path):
+    import pandas as pd
+    rows, cur, buf = [], None, []
+    with open(path) as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith(">"):
+                if cur:
+                    r = cdna_record(cur, "".join(buf).upper())
+                    if r:
+                        rows.append(r)
+                cur, buf = line[1:].split("|")[0].split(".")[0].strip(), []
+            else:
+                buf.append(line)
+    if cur:
+        r = cdna_record(cur, "".join(buf).upper())
+        if r:
+            rows.append(r)
+    return pd.DataFrame(rows).drop_duplicates("ensg")
