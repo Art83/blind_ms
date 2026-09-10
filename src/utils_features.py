@@ -25,6 +25,26 @@ KD = {
 }
 
 
+MONO = {  # monoisotopic residue masses
+    "G": 57.021464, "A": 71.037114, "S": 87.032028, "P": 97.052764, "V": 99.068414,
+    "T": 101.047679, "C": 103.009185, "L": 113.084064, "I": 113.084064, "N": 114.042927,
+    "D": 115.026943, "Q": 128.058578, "K": 128.094963, "E": 129.042593, "M": 131.040485,
+    "H": 137.058912, "F": 147.068414, "R": 156.101111, "Y": 163.063329, "W": 186.079313,
+    "U": 150.953636, "O": 237.147727,
+}
+
+
+WIN = (7, 30)
+MZ_WIN = (350.0, 1500.0)
+GRAVY_HYDROPHILIC = -1.5
+GRAVY_HYDROPHOBIC = 1.0
+PROTON = 1.007276
+WATER = 18.010565
+
+SEQUON = re.compile(r"N[^P][ST]")
+CUT = re.compile(r"(?<=[KR])(?!P)")
+
+
 # pK set for pI
 PK_POS = {"Nterm": 8.6, "K": 10.8, "R": 12.5, "H": 6.5}
 PK_NEG = {"Cterm": 3.6, "D": 3.9, "E": 4.1, "C": 8.5, "Y": 10.1}
@@ -37,6 +57,44 @@ PE_LEVEL = {"Evidence at protein level": 1, "Evidence at transcript level": 2,
 def _gravy(seq):
     vals = [KD[a] for a in seq if a in KD]
     return sum(vals) / len(vals) if vals else float("nan")
+
+
+def _digest(seq):
+    """Fully tryptic peptides with (start, end) positions, zero missed cleavages."""
+    pos = 0
+    out = []
+    for frag in CUT.split(seq):
+        if frag:
+            out.append((frag, pos, pos + len(frag)))
+            pos += len(frag)
+    return out
+
+
+def _pep_mass(p):
+    return sum(MONO.get(a, 0.0) for a in p) + WATER
+
+
+def _slow_cleave(seq, start, end):
+    n = len(seq)
+    flags = False
+    # N-terminal site: residue before the peptide is the K/R that was cut
+    if start > 0:
+        prev = seq[start - 1]
+        if start > 1 and seq[start - 2] in "DE":
+            flags = True                       # D/E before the site
+        if seq[start] in "DE":
+            flags = True                       # D/E after the site
+        if prev in "KR" and seq[start] in "KR":
+            flags = True                       # ragged site
+    # C-terminal site
+    if end < n:
+        if end > 1 and seq[end - 2] in "DE":
+            flags = True
+        if seq[end] in "DE":
+            flags = True
+        if seq[end - 1] in "KR" and seq[end] in "KR":
+            flags = True
+    return flags
 
 
 def _charge(pH, counts):

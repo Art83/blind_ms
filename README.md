@@ -6,7 +6,18 @@ present in a tissue? Analysis harmonises three independent open consortia
 abundance), determines proteins that IHC says are genuinely present, and asks which
 protein properties predict an MS miss once abundance is accounted for.
 
+Outcomes:
+- **measured**: MS found the protein in this tissue. 64,960 rows.(MS-bright)
+- **measured_absent**: MS found the protein somewhere in the body map, in at least one other tissue, but not in other(s). 6,603 rows. The protein is technically detectable by MS but something about context(tissue) causes the miss.
+- **not_measured**: MS never found the protein in any tissue in the whole study. 17,480 rows. The protein is a miss everywhere.
+
+Why two MS-dark groups instead of just one pooled:
+
+A protein that MS never finds anywhere might be low everywhere, or its sequence has properties (few tryptic peptides, hydrophobic) that don't agree with MS. Thus, analysing **measured vs not_measured** is mainly chemistry/biophysics test.
+In contrast, A protein that MS finds in liver but misses in lung cannot be missed just because of its properties/function. Thus, analysing **measured vs measured_absent** is mainly about "dilution", where protein is low in that tissue (present in only a few cell types) and gets swamped when the whole organ is homogenised.
+
 ## Findings
+- Abundance dominates (beta=2.16), tryptic peptide yield second (+0.69, p 4e-15). Transmembrane count, hydrophobicity and size are null once yield is in. Yield survives the tissue-matched abundance covariate (+0.35, p 5e-4), IHC thresholds, peptide windows and reliability floors. In-sample AUC 0.90.
 
 ## Run order
 if all necessary files are in `data/` (see more below), pipeline should be fully reproducible on any machine with python.
