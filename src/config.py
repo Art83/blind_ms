@@ -57,6 +57,7 @@ IHC_NA = {"N/A", "Not representative", "Ascending", "Descending"}
 
 # reliability confidence, high -> low
 RELIABILITY_ORDER = ["Enhanced", "Supported", "Approved", "Uncertain"]
+LEVEL_ORD = {"Low": 1, "Medium": 2, "High": 3}
 
 # GTEx missingness tokens
 GTEX_NA = {"NA", "NaN", ""}

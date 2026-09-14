@@ -17,8 +17,9 @@ A protein that MS never finds anywhere might be low everywhere, or its sequence 
 In contrast, A protein that MS finds in liver but misses in lung cannot be missed just because of its properties/function. Thus, analysing **measured vs measured_absent** is mainly about "dilution", where protein is low in that tissue (present in only a few cell types) and gets swamped when the whole organ is homogenised.
 
 ## Findings
-- Abundance dominates (beta=2.16), tryptic peptide yield second (+0.69, p 4e-15). Transmembrane count, hydrophobicity and size are null once yield is in. Yield survives the tissue-matched abundance covariate (+0.35, p 5e-4), IHC thresholds, peptide windows and reliability floors. In-sample AUC 0.90.
-
+- Abundance dominates (beta=2.16), tryptic peptide yield second (beta=0.69, p=4e-15). Transmembrane count, hydrophobicity and size are null once yield is in. Yield survives the tissue-matched abundance covariate (+0.35, p 5e-4), IHC thresholds, peptide windows and reliability floors. In-sample AUC 0.90.
+- Dilution with cell count weighting is null across six tissues (p=0.84) and marginal in the two tissues with more than two scored cell types (beta=0.085, p=0.04). The main conclusion though is that there's not enough resolution. Single-cell proteomics needs to happen to increase granularity.
+- Yield stays between +0.40 and +0.70 across IHC thresholds, peptide windows and antibody reliability floors while TM count stays null.
 ## Run order
 if all necessary files are in `data/` (see more below), pipeline should be fully reproducible on any machine with python.
 
@@ -34,7 +35,9 @@ if all necessary files are in `data/` (see more below), pipeline should be fully
 | 7  | `3.3.feature_biophysics.py` | Building features   | `uniprot_human.tsv`, `gene_dict.tsv`, `features_transcript.tsv`, `features_annotation.tsv`                                                                                    | `features_protein.tsv`                                                            |
 | 8  | `3.4.feature_structure.py`  | Building features   | `alphafold/UP000005640_9606_HUMAN_v*.tar`, `half_life_protein.csv`, `features_protein.tsv`, `gene_dict.tsv`                                                                   | `features_structure.tsv`, `features_structure.txt`                                |
 | 9  | `3.5.feature_peptides.py`   | Building features   | `uniprot_human.tsv`, `features_protein.tsv` (check only)                                                                                                                      | `features_peptides.tsv`                                                           |
-| 10 | `4.model_msdark.py`         | Analysis            |  `grid.tsv`, `features_protein.tsv`                                                                                                                                           | `model_table.tsv`, `model_summary.txt`                                            |
+| 10 | `4.model_msdark.py`         | Analysis            | `grid.tsv`, `features_protein.tsv`                                                                                                                                            | `model_table.tsv`, `model_summary.txt`                                            |
+| 11 | `dilution_rescue.py`        | Diagnostics         | `celltype_proportions.csv`, `consensus_bridge_map.csv`, `ihc_celltype_long.tsv`, `model_table.tsv`                                                                            | `dilution_covariate.tsv`, `dilution_unbridged.tsv`, `dilution_summary.txt`        |
+| 12 | `robustness.py`             | Diagnostics         | `model_table.tsv`, `ihc_celltype_long.tsv`, `uniprot_human.tsv`, `gene_dict.tsv`                                                                                              | `robustness_summary.txt`                                                          |
 
 
 

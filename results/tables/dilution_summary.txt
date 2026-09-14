@@ -1,0 +1,75 @@
+dilution_covariate: 100,790 (ensg,tissue) rows
+bridge coverage of IHC-positive calls: 54.1%
+dilution-usable tissues (>= 2 HPA cell types): ['liver', 'lung', 'pancreas', 'skin', 'spleen', 'testis']
+cell types per tissue (HPA granularity bounds the test):
+          hpa_celltypes  tabula_celltypes
+tissue                                   
+colon                 1                 1
+heart                 1                 2
+liver                 2                 2
+lung                  4                 6
+pancreas              2                 5
+skin                  6                 6
+spleen                2                 4
+stomach               1                 2
+testis                6                 4
+
+=== (1) emf variance per usable tissue (is the covariate degenerate?) ===
+  tissue     n  median   std  frac_below_0.99
+   liver 13478   0.918 0.479            0.688
+    lung 13464   1.000 0.465            0.469
+pancreas 13463   1.000 0.474            0.495
+    skin 13365   0.028 0.480            0.644
+  spleen 13478   0.161 0.463            0.663
+  testis  5441   0.556 0.402            0.720
+
+=== (2) models ===
+--- DILUTION model [all usable (6 tissues)] ---
+rows 37,735  (6 tissues, 9,115 genes), measured_absent frac 0.087
+emf by outcome (median | std):
+  gtex_detected=0:  median 1.000  std 0.361
+  gtex_detected=1:  median 1.000  std 0.367
+AUC 0.8661  | coef (gene-clustered SE):
+               log_abundance  beta=+1.675  p=0.00e+00
+    expressing_mass_fraction  beta=-0.005  p=8.24e-01
+                 log_tryptic  beta=+0.351  p=1.37e-24
+                        n_tm  beta=+0.082  p=5.07e-03
+
+--- DILUTION model [spread tissues only: skin+testis] ---
+rows 11,536  (2 tissues, 8,251 genes), measured_absent frac 0.079
+emf by outcome (median | std):
+  gtex_detected=0:  median 0.556  std 0.427
+  gtex_detected=1:  median 0.972  std 0.448
+AUC 0.8737  | coef (gene-clustered SE):
+               log_abundance  beta=+1.569  p=5.78e-175
+    expressing_mass_fraction  beta=+0.084  p=3.91e-02
+                 log_tryptic  beta=+0.326  p=1.14e-13
+                        n_tm  beta=+0.046  p=2.16e-01
+
+=== (3) top unbridged IHC-positive cell types (the 46% miss) ===
+         tissue                   cell_type  n_ihc_pos_calls
+         testis                Leydig cells             9007
+          colon             glandular cells             8867
+cerebral_cortex              neuronal cells             8321
+           skin             epidermal cells             7327
+          colon           endothelial cells             7089
+cerebral_cortex                    neuropil             6308
+          colon   peripheral nerve/ganglion             6252
+cerebral_cortex                 glial cells             5990
+cerebral_cortex           endothelial cells             5746
+           skin                  Langerhans             5033
+         testis cells in seminiferous ducts             4854
+           lung              alveolar cells             4629
+         testis               sertoli cells             2565
+           skin      fibrohistiocytic cells             1908
+           skin        cells in basal layer             1845
+           skin           endothelial cells             1732
+           skin      cells in spinous layer             1631
+           skin                 lymphocytes             1516
+           skin     cells in granular layer             1431
+           skin              hair follicles              564
+          colon      mucosal lymphoid cells              510
+          colon                 enterocytes              508
+          colon                goblet cells              415
+           skin              eccrine glands              336
+           skin      cells in corneal layer              231

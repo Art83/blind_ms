@@ -1,0 +1,35 @@
+tissue	cell_type	n_ihc_pos_calls
+testis	Leydig cells	9007
+colon	glandular cells	8867
+cerebral_cortex	neuronal cells	8321
+skin	epidermal cells	7327
+colon	endothelial cells	7089
+cerebral_cortex	neuropil	6308
+colon	peripheral nerve/ganglion	6252
+cerebral_cortex	glial cells	5990
+cerebral_cortex	endothelial cells	5746
+skin	Langerhans	5033
+testis	cells in seminiferous ducts	4854
+lung	alveolar cells	4629
+testis	sertoli cells	2565
+skin	fibrohistiocytic cells	1908
+skin	cells in basal layer	1845
+skin	endothelial cells	1732
+skin	cells in spinous layer	1631
+skin	lymphocytes	1516
+skin	cells in granular layer	1431
+skin	hair follicles	564
+colon	mucosal lymphoid cells	510
+colon	enterocytes	508
+colon	goblet cells	415
+skin	eccrine glands	336
+skin	cells in corneal layer	231
+colon	enterocytes - Microvilli	223
+skin	arrector pili muscle cells	163
+skin	extracellular matrix	130
+colon	fibroblasts	106
+cerebral_cortex	neuronal projections	34
+cerebral_cortex	synapses	16
+skin	sebaceous cells	8
+skin	secretory cells	8
+skin	sweat ducts	5

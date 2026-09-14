@@ -1,0 +1,35 @@
+How robust the LR chemistry result
+robust iff log_tryptic stays + / significant and n_tm stays null.
+
+baseline:
+Low+ / 7-30 / all         n=82,440   log_tryptic +0.657 (p=1.2e-13)   n_tm +0.025 (p=4.3e-01)
+
+(A) IHC present threshold (Low+ default):
+Low+  (default)           n=82,440   log_tryptic +0.657 (p=1.2e-13)   n_tm +0.025 (p=4.3e-01)
+Medium+                   n=64,803   log_tryptic +0.702 (p=5.3e-14)   n_tm +0.021 (p=5.2e-01)
+High only                 n=24,160   log_tryptic +0.681 (p=9.7e-09)   n_tm -0.041 (p=2.8e-01)
+
+(B) tryptic length window (7-30 default):
+7-30  (default)           n=82,440   log_tryptic +0.657 (p=1.2e-13)   n_tm +0.025 (p=4.3e-01)
+6-40                      n=82,440   log_tryptic +0.685 (p=3.4e-12)   n_tm +0.022 (p=4.8e-01)
+8-25                      n=82,440   log_tryptic +0.612 (p=1.1e-13)   n_tm +0.040 (p=2.3e-01)
+9-35                      n=82,440   log_tryptic +0.547 (p=1.4e-09)   n_tm +0.022 (p=4.9e-01)
+
+(C) reliability floor:
+all (default)             n=82,440   log_tryptic +0.657 (p=1.2e-13)   n_tm +0.025 (p=4.3e-01)
+Approved+                 n=67,108   log_tryptic +0.601 (p=9.5e-10)   n_tm +0.051 (p=1.7e-01)
+Supported+ (Enh+Sup)      n=28,240   log_tryptic +0.441 (p=1.7e-03)   n_tm +0.039 (p=4.6e-01)
+
+(D) reliability gradient vs abundance gradient:
+raw MS-dark fraction by antibody class, then within whole-body abundance quartile.
+  grade            n   dark  med_log_ab    Q1 low       Q2       Q3  Q4 high
+  Enhanced    17,955  0.157       0.635     0.609    0.209    0.075    0.010
+  Supported   11,597  0.153       0.973     0.737    0.257    0.064    0.055
+  Approved    42,396  0.288       0.004     0.694    0.267    0.085    0.030
+  Uncertain   17,095  0.426      -0.558     0.731    0.317    0.109    0.046
+
+(E) transmembrane check, chemistry model:
+n_tm total effect on detection (abundance + tissue controlled): +0.003 (p=9.2e-01)
+a-path, log_tryptic ~ n_tm (abundance + tissue controlled):    -0.095 (p=2.2e-16)
+Membrane proteins do yield fewer observable peptides, but that is already
+carried by log_tryptic; there is no separate transmembrane effect to explain.
