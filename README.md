@@ -28,6 +28,10 @@ In contrast, A protein that MS finds in liver but misses in lung cannot be misse
   abundance predicted from the gene. Proteotypicity is the only group that keeps importance once abundance is known; transmembrane, signal peptide
   and PTM groups contribute nothing. Within the middle abundance third, detection rises from 76% to 95% across tryptic-yield quartiles, and the
   lowest 5% of intrinsic scores are 74% MS-dark (3.1x base rate).
+- **Per-tissue score.** Same three models on gene x tissue rows: **intrinsic AUC 0.78, practical 0.81, +abundance 0.90**, flat across all ten tissues, and
+  raw abundance alone reaches 0.865. Tissue-specific misses (found elsewhere, absent here) are the hard case at 0.87 with abundance, against 0.91 for
+  proteins dark everywhere. Gene-level collapse reproduces the previous stage AUCs.
+
 ## Run order
 if all necessary files are in `data/` (see more below the details of each dataset), pipeline should be fully reproducible on any machine with python.
 
@@ -47,7 +51,8 @@ if all necessary files are in `data/` (see more below the details of each datase
 | 11 | `dilution_rescue.py`        | Diagnostics         | `celltype_proportions.csv`, `consensus_bridge_map.csv`, `ihc_celltype_long.tsv`, `model_table.tsv`                                                                            | `dilution_covariate.tsv`, `dilution_unbridged.tsv`, `dilution_summary.txt`        |
 | 12 | `robustness.py`             | Diagnostics         | `model_table.tsv`, `ihc_celltype_long.tsv`, `uniprot_human.tsv`, `gene_dict.tsv`                                                                                              | `robustness_summary.txt`                                                          |
 | 13 | `peptideatlas_validate.py`  | Diagnostics         | `APD_ensembl_hits.tsv`, `ensp2ensg.txt`, `features_protein.tsv`, `model_table.tsv`                                                                                            | `peptideatlas_per_gene.tsv`, `peptideatlas_validation.txt`                        |
-| 14 | `5.ml_detectability.py`     | Analysis            | `features_protein.tsv`, `features_peptides.tsv`, `features_structure.tsv`, `model_table.tsv`, `peptideatlas_per_gene.tsv`, `paxdb_wholebody.tsv`                              | `ml_summary.txt`, `ml_per_gene_predictions.tsv`                                   |
+| 14 | `5.1.ml_detectability.py`   | Analysis            | `features_protein.tsv`, `features_peptides.tsv`, `features_structure.tsv`, `model_table.tsv`, `peptideatlas_per_gene.tsv`, `paxdb_wholebody.tsv`                              | `ml_summary.txt`, `ml_per_gene_predictions.tsv`                                   |
+| 15 | `label_noise_floor.py`      | Diagnostics         | `gtex_protein_tissue_median.csv`, `grid.tsv`, `peptideatlas_per_gene.tsv`, `ml_per_gene_predictions.tsv`                                                                      | `label_noise_subsites.tsv`, `label_noise_subsites.tsv`                            |
 
 
 

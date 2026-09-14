@@ -1,0 +1,38 @@
+LABEL NOISE FLOOR
+
+=== (1) per-tissue label: paired GTEx subsites, IHC-present proteins in the GTEx matrix ===
+[colon] Colon Sigmoid vs Colon Transverse   n=8,171
+both 6,752  neither 360  Colon Sigmoid only 859  Colon Transverse only 200
+agreement 0.870   kappa 0.343   detected in one subsite only: 13.6% of proteins detected in either
+AUC one subsite -> other: 0.633 / 0.765   (binary replicate, cannot rank)
+AUC PaxDb abundance -> subsite: 0.845 / 0.846   (continuous comparator, n=8,077)
+disagreement by abundance quartile: Q1 low 35.0%  Q2 12.0%  Q3 3.6%  Q4 high 1.1%
+[heart] Heart Atrial vs Heart Ventricle   n=6,295
+both 5,484  neither 182  Heart Atrial only 401  Heart Ventricle only 228
+agreement 0.900   kappa 0.314   detected in one subsite only: 10.3% of proteins detected in either
+AUC one subsite -> other: 0.636 / 0.688   (binary replicate, cannot rank)
+AUC PaxDb abundance -> subsite: 0.833 / 0.844   (continuous comparator, n=6,219)
+disagreement by abundance quartile: Q1 low 28.0%  Q2 8.9%  Q3 2.5%  Q4 high 0.7%
+[skin] Skin Unexpo vs Skin SunExpo   n=7,705
+both 6,636  neither 334  Skin Unexpo only 501  Skin SunExpo only 234
+agreement 0.905   kappa 0.426   detected in one subsite only: 10.0% of proteins detected in either
+AUC one subsite -> other: 0.683 / 0.759   (binary replicate, cannot rank)
+AUC PaxDb abundance -> subsite: 0.850 / 0.847   (continuous comparator, n=7,616)
+disagreement by abundance quartile: Q1 low 27.5%  Q2 7.8%  Q3 1.9%  Q4 high 0.7%
+
+  reading: two MS samples of the same organ disagree on 10%-14% of the proteins
+
+=== (2a) gene-level label: 'ever detected' is insensitive to subsite choice ===
+IHC-present-somewhere genes in the GTEx matrix: 9,756
+ever-detected rate using first subsites 0.999, second subsites 0.995, genes that flip: 57 (0.58%)
+
+=== (2b) gene-level label: GTEx vs PeptideAtlas at matched positive rate ===
+genes with both labels: 12,318   GTEx positive rate 0.760
+PeptideAtlas pseudo-label: observed peptides > 32 (same positive rate)
+agreement 0.830   kappa 0.534   GTEx-dark & PA-bright 1,044   GTEx-bright & PA-dark 1,055
+AUC PeptideAtlas peptide count -> GTEx label: 0.875
+AUC PaxDb abundance -> GTEx label:            0.853
+
+model performance, all genes vs the consensus subset (both sources agree):
+intrinsic (no abundance)   AUC vs GTEx 0.790   vs PeptideAtlas 0.827   on consensus (n=10,219) 0.871
++abundance                 AUC vs GTEx 0.886   vs PeptideAtlas 0.926   on consensus (n=10,219) 0.968
