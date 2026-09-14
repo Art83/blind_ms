@@ -1,0 +1,17 @@
+PEPTIDEATLAS VALIDATION (human build 502, independent of GTEx)
+
+coverage:
+pep2prot rows: 54,532,227   rows with ENSP: 20.5%
+ENSP->ENSG mapping rate: 96.3%
+genes with >=1 observed peptide: 14,454 / 14,826 (97.5%)
+median observed peptides (observed genes): 77
+
+1. cross-source: GTEx vs PeptideAtlas
+Spearman(frac_measured GTEx, log PeptideAtlas peptides): r=+0.670 p=0.0e+00 n=12,318
+median PeptideAtlas peptides:  GTEx-dark genes 21  vs GTEx-detectable 132
+fraction never observed in PeptideAtlas:  GTEx-dark 3.4%  vs GTEx-detectable 0.1%
+
+2. mechanism: in-silico tryptic yield vs observed peptide count (observed genes)
+Spearman(log in-silico tryptic, log observed): r=+0.399 p=0.0e+00 n=14,454  [partly length-driven]
+partial (control abundance + length): r=+0.296 p=1.2e-244 n=12,205
+size-normalised tryptic_per_kda (control abundance+length): r=+0.270 p=4.1e-202 n=12,205
