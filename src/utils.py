@@ -4,6 +4,7 @@ Functions for project
 from typing import Tuple, Any
 
 import pandas as pd
+import numpy as np
 from config import TISSUES, SUBSITE_AGG, IHC_ABSENT, IHC_PRESENT, RELIABILITY_ORDER, PAXDB_DIR
 
 
@@ -239,7 +240,6 @@ def _qc(grid) -> str:
 
 # QC utils
 def audit(out):
-    import numpy as np
     gd = pd.read_csv(out / "gene_dict.tsv", sep="\t", dtype=str)
     sym2ensg = (gd.dropna(subset=["symbol", "ensg"]).drop_duplicates("symbol")
                   .set_index("symbol")["ensg"])
@@ -346,7 +346,6 @@ def _report(m) -> str:
 # PAxdb vs gtex weight
 def _auc(y, x):
     from sklearn.metrics import roc_auc_score
-    import numpy as np
     m = np.isfinite(x)
     return float(roc_auc_score(y[m], x[m])) if len(np.unique(y[m])) > 1 else float("nan")
 
@@ -370,3 +369,241 @@ def _read_weights(path):
     return {}
 
 
+# ML
+def _build_table(out):
+    feats = pd.read_csv(out / "features_protein.tsv", sep="\t")
+    mt = pd.read_csv(out / "model_table.tsv", sep="\t")
+    g = mt.groupby("ensg").agg(frac_measured=("gtex_detected", "mean"),
+                               log_abundance=("log_abundance", "median"),
+                               n_tissues=("gtex_detected", "size")).reset_index()
+    g["y"] = (g["frac_measured"] > 0).astype(int)
+    pep_path = out / "features_peptides.tsv"
+    if pep_path.exists() and "uniprot" in feats.columns:
+        pep = pd.read_csv(pep_path, sep="\t")
+        feats = feats.merge(pep, on="uniprot", how="left")
+    else:
+        print("features_peptides.tsv not found -> peptide-level groups unavailable")
+    st_path = out / "features_structure.tsv"
+    if st_path.exists() and "uniprot" in feats.columns:
+        st = pd.read_csv(st_path, sep="\t").drop(columns=["ensg"], errors="ignore")
+        feats = feats.merge(st, on="uniprot", how="left")
+    else:
+        print("features_structure.tsv not found -> AlphaFold and half-life groups unavailable")
+    df = g.merge(feats, on="ensg", how="left")
+    n_dup = int(df["ensg"].duplicated().sum())
+    if n_dup:
+        print(f"dropped {n_dup} duplicate ENSG rows after feature merge (first kept)")
+        df = df.drop_duplicates("ensg")
+    return df
+
+def _merge_size_tryptic(groups):
+    g = {k: v for k, v in groups.items() if k not in ("size", "tryptic_yield")}
+    g["size_peptide_axis"] = groups.get("size", []) + groups.get("tryptic_yield", [])
+    return g
+
+
+def select_groups(df_tr, groups, thresh=0.8, n_boot=50, seed=0):
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.impute import SimpleImputer
+    cols = _cols(groups)
+    imp = SimpleImputer(strategy="median").fit(df_tr[cols].astype(float))
+    sc = StandardScaler().fit(imp.transform(df_tr[cols].astype(float)))
+    X = sc.transform(imp.transform(df_tr[cols].astype(float)))
+    y = df_tr["y"].values
+    rng = np.random.default_rng(seed)
+    sel = np.zeros(len(cols))
+    n = len(df_tr)
+    for _ in range(n_boot):
+        idx = rng.choice(n, int(0.6 * n), replace=False)
+        m = LogisticRegression(penalty="l1", solver="liblinear", C=0.1, max_iter=500)
+        m.fit(X[idx], y[idx])
+        sel += np.abs(m.coef_[0]) > 1e-8
+    freq = dict(zip(cols, sel / n_boot))
+    grp_freq = {g: float(np.max([freq[c] for c in v])) for g, v in groups.items()}
+    selected = [g for g, f in grp_freq.items() if f >= thresh] or list(groups)
+    return selected, grp_freq
+
+
+def _cols(groups):
+    return [c for v in groups.values() for c in v]
+
+
+def nested_oof(df, groups, n_splits, default, grid, n_inner, seed=0, tune=False):
+    from sklearn.model_selection import StratifiedGroupKFold
+    from sklearn.ensemble import HistGradientBoostingClassifier
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.pipeline import make_pipeline
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.impute import SimpleImputer
+
+    cv = StratifiedGroupKFold(n_splits, shuffle=True, random_state=seed)
+    y = df["y"].values
+    grp = df["ensg"].values
+    oof_gbm = np.full(len(df), np.nan)
+    oof_log = np.full(len(df), np.nan)
+    sel_count = {g: 0 for g in groups}
+    chosen = []
+    for tr, te in cv.split(df, y, groups=grp):
+        dtr, dte = df.iloc[tr], df.iloc[te]
+        selected, _ = select_groups(dtr, groups, seed=seed)
+        for g in selected:
+            sel_count[g] += 1
+        scols = _cols({g: groups[g] for g in selected})
+        Xtr = dtr[scols].astype(float).values
+        Xte = dte[scols].astype(float).values
+        d, lr = tune_gbm(Xtr, dtr["y"].values, dtr["ensg"].values, default, grid, n_inner, seed) if tune else default
+        chosen.append((d, lr))
+        gbm = HistGradientBoostingClassifier(max_iter=300, learning_rate=lr,
+                                             max_depth=d, random_state=0).fit(Xtr, dtr["y"].values)
+        oof_gbm[te] = gbm.predict_proba(Xte)[:, 1]
+        pipe = make_pipeline(SimpleImputer(strategy="median"), StandardScaler(),
+                             LogisticRegression(max_iter=2000)).fit(Xtr, dtr["y"].values)
+        oof_log[te] = pipe.predict_proba(Xte)[:, 1]
+    sel_freq = {g: sel_count[g] / n_splits for g in groups}
+    return oof_gbm, oof_log, sel_freq, chosen
+
+
+def _boot_ci(y, p, fn, n=1000, seed=1):
+    rng = np.random.default_rng(seed)
+    vals = []
+    for _ in range(n):
+        idx = rng.integers(0, len(y), len(y))
+        if len(np.unique(y[idx])) < 2:
+            continue
+        vals.append(fn(y[idx], p[idx]))
+    return float(fn(y, p)), float(np.percentile(vals, 2.5)), float(np.percentile(vals, 97.5))
+
+
+def _diff_ci(y, p_a, p_b, fn, n=1000, seed=2):
+    rng = np.random.default_rng(seed)
+    d = []
+    for _ in range(n):
+        idx = rng.integers(0, len(y), len(y))
+        if len(np.unique(y[idx])) < 2:
+            continue
+        d.append(fn(y[idx], p_a[idx]) - fn(y[idx], p_b[idx]))
+    return float(fn(y, p_a) - fn(y, p_b)), float(np.percentile(d, 2.5)), float(np.percentile(d, 97.5))
+
+
+def present(group_dict, df):
+    return {k: [c for c in v if c in df.columns] for k, v in group_dict.items()
+            if any(c in df.columns for c in v)}
+
+
+def calibration(y, p):
+    from sklearn.calibration import calibration_curve
+    fp, mp = calibration_curve(y, p, n_bins=10, strategy="quantile")
+    return list(zip(mp, fp))
+
+
+def perm_importance(df, groups, n_rep=20, seed=0):
+    from sklearn.ensemble import HistGradientBoostingClassifier
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import roc_auc_score
+    cols = _cols(groups)
+    Xtr, Xte, ytr, yte = train_test_split(df[cols].astype(float).values, df["y"].values,
+                                          test_size=0.3, stratify=df["y"].values, random_state=seed)
+    mdl = HistGradientBoostingClassifier(max_iter=300, learning_rate=0.05,
+                                         max_depth=4, random_state=0).fit(Xtr, ytr)
+    base = roc_auc_score(yte, mdl.predict_proba(Xte)[:, 1])
+    rng = np.random.default_rng(seed)
+    idx = {c: i for i, c in enumerate(cols)}
+    res = {}
+    for g, members in groups.items():
+        gi = [idx[c] for c in members]
+        drops = []
+        for _ in range(n_rep):
+            Xp = Xte.copy()
+            perm = rng.permutation(len(Xp))
+            for j in gi:
+                Xp[:, j] = Xp[perm, j]
+            drops.append(base - roc_auc_score(yte, mdl.predict_proba(Xp)[:, 1]))
+        res[g] = (float(np.mean(drops)), float(np.std(drops)))
+    return base, dict(sorted(res.items(), key=lambda kv: -kv[1][0]))
+
+
+def per_gene_attribution(df, groups):
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.impute import SimpleImputer
+    cols = _cols(groups)
+    imp = SimpleImputer(strategy="median"); sc = StandardScaler()
+    Z = sc.fit_transform(imp.fit_transform(df[cols].astype(float)))
+    m = LogisticRegression(max_iter=2000).fit(Z, df["y"].values)
+    coef = dict(zip(cols, m.coef_[0]))
+    contrib = {g: (Z[:, [cols.index(c) for c in v]] *
+                   np.array([coef[c] for c in v])).sum(axis=1) for g, v in groups.items()}
+    out = pd.DataFrame(contrib, index=df["ensg"].values)
+    out["top_dark_reason"] = out.idxmin(axis=1)
+    return out.reset_index().rename(columns={"index": "ensg"})
+
+
+def transfer(out, df, oof_intrinsic):
+    from scipy.stats import spearmanr
+    from sklearn.metrics import roc_auc_score
+    d = df[["ensg"]].copy(); d["p"] = oof_intrinsic
+    lines = []
+    pa = pd.read_csv(out / "peptideatlas_per_gene.tsv", sep="\t")[
+        ["ensg", "pa_n_peptides", "pa_observed"]]
+    a = d.merge(pa, on="ensg", how="inner")
+    r, pv = spearmanr(a["p"], a["pa_n_peptides"])
+    lines.append(f"PeptideAtlas (n={len(a):,}): Spearman(P_intrinsic, observed peptides) "
+                 f"r={r:+.3f} p={pv:.1e}")
+    if a["pa_observed"].nunique() > 1:
+        lines.append(f"AUC predicting PeptideAtlas observed: "
+                     f"{roc_auc_score(a['pa_observed'], a['p']):.3f}")
+    px = pd.read_csv(out / "paxdb_wholebody.tsv", sep="\t")[["ensg", "paxdb_ppm_global"]]
+    px = px.dropna().drop_duplicates("ensg")
+    pres = d.merge(px, on="ensg", how="inner")
+    r, pv = spearmanr(pres["p"], np.log10(pres["paxdb_ppm_global"]))
+    lines.append(f"PaxDb whole-body abundance (n={len(pres):,}; supporting, not load-bearing):")
+    lines.append(f"Spearman(P_intrinsic, log PaxDb abundance): r={r:+.3f} p={pv:.1e}")
+    return "\n".join(lines)
+
+
+def actionable_readout(df, oof_intrinsic):
+    L = []
+    t = df["n_tryptic_7_30"]
+    qlab = ["Q1 fewest", "Q2", "Q3", "Q4 most"]
+    q = pd.qcut(t, 4, labels=qlab)
+    L.append("detection rate by tryptic-fragment yield (the 'looks like X -> odds Y' rule):")
+    for lev in qlab:
+        m = (q == lev).values
+        L.append(f"{lev:10s}  median fragments {t[m].median():4.0f}   "
+                 f"detected {df.loc[m, 'y'].mean():.1%}   (n={int(m.sum()):,})")
+    ab = pd.qcut(df["log_abundance"], 3, labels=["lo", "mid", "hi"])
+    sub = df[(ab == "mid").values].copy()
+    sub["tq"] = pd.qcut(sub["n_tryptic_7_30"], 4, labels=qlab)
+    L.append("same, within the middle abundance third (same abundance, varying yield):")
+    for lev in qlab:
+        m = (sub["tq"] == lev).values
+        L.append(f"{lev:10s}  detected {sub.loc[m, 'y'].mean():.1%}   (n={int(m.sum()):,})")
+    d = df[["y"]].copy(); d["p"] = oof_intrinsic
+    base = float((d["y"] == 0).mean())
+    d = d.sort_values("p")
+    L.append(f"triage by abundance-free score (base MS-dark rate {base:.1%}):")
+    for frac in (0.05, 0.10, 0.20):
+        k = int(len(d) * frac)
+        dr = float((d.head(k)["y"] == 0).mean())
+        L.append(f"lowest {int(frac*100):2d}% scored -> {dr:.1%} are MS-dark "
+                 f"= {dr/base:.1f}x base rate")
+    return "\n".join(L)
+
+
+def tune_gbm(Xtr, ytr, gtr, default, grid, n_inner, seed=0):
+    from sklearn.model_selection import StratifiedGroupKFold
+    from sklearn.ensemble import HistGradientBoostingClassifier
+    from sklearn.metrics import roc_auc_score
+    inner = StratifiedGroupKFold(n_inner, shuffle=True, random_state=seed)
+    splits = list(inner.split(Xtr, ytr, groups=gtr))
+    best, best_auc = default, -1.0
+    for d, lr in grid:
+        aucs = []
+        for a, b in splits:
+            m = HistGradientBoostingClassifier(max_iter=300, learning_rate=lr, max_depth=d,
+                                               random_state=0).fit(Xtr[a], ytr[a])
+            aucs.append(roc_auc_score(ytr[b], m.predict_proba(Xtr[b])[:, 1]))
+        if np.mean(aucs) > best_auc:
+            best, best_auc = (d, lr), float(np.mean(aucs))
+    return best

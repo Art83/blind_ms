@@ -1,0 +1,169 @@
+MS-DETECTABILITY PREDICTOR (nested CV, gene-grouped, bootstrap CIs)
+
+genes: 12,318   positive rate (detected somewhere): 0.760   MS-dark n=2,959
+excluded a priori (translation regulation): 25 features
+selection: stability >= 0.8 inside each outer fold; reported metrics are the selected model's
+
+=== performance (nested out-of-fold, GBM 95% bootstrap CI) ===
+ intrinsic (no abundance, no translation block) 
+AUC 0.790  [0.781, 0.798]
+PR-AUC 0.915  [0.909, 0.920]
+Brier 0.144  [0.140, 0.148]
+ practical (intrinsic + translation block; all inputs from the gene) 
+AUC 0.825  [0.817, 0.833]
+PR-AUC 0.932  [0.927, 0.937]
+Brier 0.134  [0.130, 0.137]
+ +abundance 
+AUC 0.886  [0.880, 0.893]
+PR-AUC 0.959  [0.955, 0.962]
+Brier 0.111  [0.107, 0.114]
+AUC gain from abundance: +0.097  [+0.089, +0.105]  -> abundance adds signal
+AUC gain from the translation block: +0.036  [+0.029, +0.042]  -> translation block adds signal
+
+logistic baseline AUC: intrinsic 0.785 | practical 0.819 | +abundance 0.884
+
+hyperparameters chosen per outer fold (depth, lr) by inner 3-fold grouped CV over 9 grid points; ablations use the fixed default (4, 0.05):
+  [intrinsic] (3,0.1), (3,0.05), (3,0.05), (4,0.05), (4,0.05)
+  [practical] (3,0.05), (4,0.05), (4,0.05), (3,0.05), (4,0.05)
+  [+abundance] (3,0.03), (3,0.03), (3,0.03), (3,0.03), (3,0.03)
+
+=== ablation: without peptide-level groups (proteotypicity, peptide_chemistry) ===
+  [intrinsic] comparator AUC 0.783 [0.774, 0.791]   gain from the group +0.007 [+0.003, +0.010]  -> ADDS signal
+  [+abundance] comparator AUC 0.881 [0.875, 0.887]   gain from the group +0.005 [+0.003, +0.008]  -> ADDS signal
+
+=== ablation: without annotated PTM group ===
+  [intrinsic] comparator AUC 0.789 [0.781, 0.799]   gain from the group +0.000 [-0.002, +0.002]  -> gain NOT significant
+  [+abundance] comparator AUC 0.885 [0.878, 0.891]   gain from the group +0.002 [+0.001, +0.003]  -> ADDS signal
+
+=== ablation: without topology group ===
+  [intrinsic] comparator AUC 0.790 [0.782, 0.799]   gain from the group -0.000 [-0.002, +0.001]  -> gain NOT significant
+  [+abundance] comparator AUC 0.885 [0.878, 0.891]   gain from the group +0.002 [+0.000, +0.003]  -> ADDS signal
+
+=== ablation: without AlphaFold pLDDT group ===
+  [intrinsic] comparator AUC 0.778 [0.770, 0.787]   gain from the group +0.011 [+0.007, +0.016]  -> ADDS signal
+  [+abundance] comparator AUC 0.884 [0.877, 0.890]   gain from the group +0.003 [+0.001, +0.004]  -> ADDS signal
+
+=== ablation: without the extra compartments ===
+  [intrinsic] comparator AUC 0.789 [0.781, 0.798]   gain from the group +0.000 [-0.002, +0.002]  -> gain NOT significant
+  [+abundance] comparator AUC 0.884 [0.878, 0.891]   gain from the group +0.002 [+0.001, +0.003]  -> ADDS signal
+
+=== ablation: without the sequence disorder proxy (pLDDT retained) ===
+  [intrinsic] comparator AUC 0.790 [0.781, 0.799]   gain from the group -0.001 [-0.003, +0.001]  -> gain NOT significant
+  [+abundance] comparator AUC 0.885 [0.878, 0.891]   gain from the group +0.002 [+0.001, +0.003]  -> ADDS signal
+
+=== ablation: with OBSERVED-PTM counts added (MS observation history, a leak by construction) ===
+  [intrinsic] comparator AUC 0.827 [0.819, 0.835]   gain from the group +0.037 [+0.032, +0.043]  -> ADDS signal
+  [+abundance] comparator AUC 0.886 [0.880, 0.893]   gain from the group -0.000 [-0.002, +0.002]  -> gain NOT significant
+
+=== ablation: with Mathieson half-life added ===
+  [intrinsic] comparator AUC 0.790 [0.782, 0.799]   gain from the group +0.000 [-0.001, +0.002]  -> gain NOT significant
+  [+abundance] comparator AUC 0.890 [0.883, 0.896]   gain from the group +0.003 [+0.001, +0.005]  -> ADDS signal
+
+=== half-life, covered subset only (value, not coverage) ===
+genes with a Mathieson value: 5,648 of 12,318 (45.9%), MS-dark among them 3.8% vs 24.0% overall
+logit(detected) ~ half-life + abundance: half-life b=+0.216 p=5.4e-03, abundance b=+1.167 p=4.7e-44
+reading: the coverage of a pulse-SILAC dataset is MS detectability.
+
+calibration (+abundance GBM, quantile bins mean_pred->obs):
+  0.21->0.21  0.39->0.38  0.58->0.57  0.75->0.76  0.86->0.85  0.92->0.92  0.95->0.95  0.97->0.97  0.98->0.99  0.99->0.99
+
+=== selection frequency across outer folds (kept if >= 0.80 inner) ===
+  [intrinsic] hydrophobicity:1.0, composition:1.0, ptm:1.0, degradation_pest:1.0, signal_secreted:1.0, localization:1.0, structure_af:1.0, topology:1.0, complex:1.0, charge_pI:1.0, proteotypicity:1.0, peptide_chemistry:1.0, size_peptide_axis:1.0, glycosylation:0.6, transmembrane:0.0
+  [practical] composition:1.0, ptm:1.0, degradation_pest:1.0, signal_secreted:1.0, localization:1.0, structure_af:1.0, topology:1.0, complex:1.0, charge_pI:1.0, proteotypicity:1.0, peptide_chemistry:1.0, translation:1.0, size_peptide_axis:1.0, hydrophobicity:0.6, glycosylation:0.2, transmembrane:0.0
+  [+abundance] composition:1.0, degradation_pest:1.0, localization:1.0, structure_af:1.0, charge_pI:1.0, proteotypicity:1.0, peptide_chemistry:1.0, abundance:1.0, topology:0.8, size_peptide_axis:0.8, ptm:0.6, hydrophobicity:0.2, transmembrane:0.0, glycosylation:0.0, signal_secreted:0.0, complex:0.0
+
+=== grouped permutation importance [intrinsic] (GBM base AUC 0.805; mean +/- sd over 20) ===
+  structure_af       +0.0809 +/- 0.0053
+  composition        +0.0531 +/- 0.0055
+  proteotypicity     +0.0387 +/- 0.0032
+  localization       +0.0329 +/- 0.0017
+  complex            +0.0238 +/- 0.0038
+  charge_pI          +0.0131 +/- 0.0019
+  size_peptide_axis  +0.0039 +/- 0.0009
+  ptm                +0.0028 +/- 0.0008
+  topology           +0.0024 +/- 0.0007
+  degradation_pest   +0.0023 +/- 0.0009
+  hydrophobicity     +0.0021 +/- 0.0009
+  peptide_chemistry  +0.0017 +/- 0.0022  ~0 (indistinguishable from noise)
+  glycosylation      +0.0014 +/- 0.0007  ~0 (indistinguishable from noise)
+  transmembrane      +0.0001 +/- 0.0001  ~0 (indistinguishable from noise)
+  signal_secreted    +0.0000 +/- 0.0000  ~0 (indistinguishable from noise)
+
+=== grouped permutation importance [practical] (GBM base AUC 0.841; mean +/- sd over 20) ===
+  translation        +0.1354 +/- 0.0083
+  structure_af       +0.0459 +/- 0.0032
+  composition        +0.0342 +/- 0.0034
+  proteotypicity     +0.0133 +/- 0.0024
+  localization       +0.0100 +/- 0.0010
+  charge_pI          +0.0067 +/- 0.0009
+  complex            +0.0048 +/- 0.0016
+  peptide_chemistry  +0.0025 +/- 0.0015  ~0 (indistinguishable from noise)
+  signal_secreted    +0.0015 +/- 0.0007
+  topology           +0.0014 +/- 0.0004
+  degradation_pest   +0.0012 +/- 0.0008  ~0 (indistinguishable from noise)
+  hydrophobicity     +0.0009 +/- 0.0004  ~0 (indistinguishable from noise)
+  ptm                +0.0005 +/- 0.0004  ~0 (indistinguishable from noise)
+  size_peptide_axis  +0.0002 +/- 0.0006  ~0 (indistinguishable from noise)
+  glycosylation      +0.0002 +/- 0.0002  ~0 (indistinguishable from noise)
+  transmembrane      +0.0001 +/- 0.0001  ~0 (indistinguishable from noise)
+
+=== grouped permutation importance [+abundance] (GBM base AUC 0.891; mean +/- sd over 20) ===
+  abundance          +0.3046 +/- 0.0113
+  proteotypicity     +0.0319 +/- 0.0019
+  localization       +0.0043 +/- 0.0010
+  composition        +0.0028 +/- 0.0013
+  size_peptide_axis  +0.0019 +/- 0.0006
+  structure_af       +0.0016 +/- 0.0008  ~0 (indistinguishable from noise)
+  hydrophobicity     +0.0008 +/- 0.0003
+  charge_pI          +0.0006 +/- 0.0004  ~0 (indistinguishable from noise)
+  ptm                +0.0005 +/- 0.0003  ~0 (indistinguishable from noise)
+  degradation_pest   +0.0003 +/- 0.0005  ~0 (indistinguishable from noise)
+  topology           +0.0002 +/- 0.0001
+  complex            +0.0002 +/- 0.0003  ~0 (indistinguishable from noise)
+  glycosylation      +0.0001 +/- 0.0002  ~0 (indistinguishable from noise)
+  signal_secreted    -0.0000 +/- 0.0000  ~0 (indistinguishable from noise)
+  transmembrane      -0.0001 +/- 0.0001  ~0 (indistinguishable from noise)
+  peptide_chemistry  -0.0012 +/- 0.0008  ~0 (indistinguishable from noise)
+
+=== external transfer (on abundance-free intrinsic predictions) ===
+PeptideAtlas (n=12,318): Spearman(P_intrinsic, observed peptides) r=+0.647 p=0.0e+00
+AUC predicting PeptideAtlas observed: 0.849
+PaxDb whole-body abundance (n=12,312; supporting, not load-bearing):
+Spearman(P_intrinsic, log PaxDb abundance): r=+0.525 p=0.0e+00
+
+=== actionable: structural risk bands + triage ===
+detection rate by tryptic-fragment yield (the 'looks like X -> odds Y' rule):
+Q1 fewest   median fragments    8   detected 68.2%   (n=3,204)
+Q2          median fragments   17   detected 74.8%   (n=3,194)
+Q3          median fragments   27   detected 76.3%   (n=2,896)
+Q4 most     median fragments   49   detected 85.1%   (n=3,024)
+same, within the middle abundance third (same abundance, varying yield):
+Q1 fewest   detected 76.3%   (n=1,061)
+Q2          detected 85.8%   (n=1,065)
+Q3          detected 90.4%   (n=970)
+Q4 most     detected 94.9%   (n=1,009)
+triage by abundance-free score (base MS-dark rate 24.0%):
+lowest  5% scored -> 74.0% are MS-dark = 3.1x base rate
+lowest 10% scored -> 66.0% are MS-dark = 2.7x base rate
+lowest 20% scored -> 56.3% are MS-dark = 2.3x base rate
+
+dominant 'why MS-dark' reason (per-gene logistic attribution):
+top_dark_reason
+abundance            5281
+size                 2713
+localization         1038
+proteotypicity        966
+structure_af          572
+composition           381
+peptide_chemistry     356
+degradation_pest      312
+hydrophobicity        231
+charge_pI             156
+ptm                   143
+topology              113
+complex                25
+tryptic_yield          20
+glycosylation           7
+signal_secreted         4
+
+size-direction check: median length all 469 aa; size-flagged-dark 271 aa 
