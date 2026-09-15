@@ -1,0 +1,42 @@
+FULL-PROTEOME + MISSING-PROTEOME STRUCTURAL PARTITION
+
+proteins: 20,431 read, 20,431 with sequence; non-standard-residue proteins 25; max length 34,350
+PE distribution: PE1:18,666, PE2:637, PE3:539, PE4:79, PE5:510
+labelled (in GTEx-detection universe): 12,318  detected rate 0.760
+
+sequence-only scorer (price of full-proteome coverage):
+  5-fold OOF AUC 0.735 [0.724, 0.746]  (full intrinsic model on the same 12,318 genes: 0.790)
+ without peptide-level block 0.718 [0.707, 0.729]   gain +0.017 [+0.012, +0.022]
+
+median predicted detectability P(detect) by PE tier:
+  PE1 Evidence at protein level    n=18,666  median P 0.776  median fragments 19
+  PE2 Evidence at transcript level n=  637  median P 0.394  median fragments 9
+  PE3 Inferred from homology       n=  539  median P 0.306  median fragments 8
+  PE4 Predicted                    n=   79  median P 0.632  median fragments 4
+  PE5 Uncertain                    n=  510  median P 0.583  median fragments 8
+
+missing proteome (PE2-4; PE5 quarantined separately):
+  n PE2-4 = 1,255
+  median P(detect):  PE2-4 0.382  vs  PE1 0.776
+  fraction of PE2-4 below PE1's 25th-pctile detectability (structurally hard): 79.7%
+  Mann-Whitney PE2-4 < PE1 (one-sided): p=0.00e+00
+  PE5 (uncertain, quarantined): n=510  median P 0.583
+
+inference-dark partition (no unique tryptic peptide in the 7-30 aa window):
+  PE1    n=18,666  zero unique peptides  1.5%   >=50% peptides shared  5.8%   median unique peptides 17
+  PE2-4  n= 1,255  zero unique peptides 14.9%   >=50% peptides shared 32.6%   median unique peptides 5
+  PE5    n=   510  zero unique peptides  2.5%   >=50% peptides shared 18.4%   median unique peptides 6
+
+size-confound check: median P(detect), PE1 vs PE2-4 within length bands:
+  L1 (    2-  221 aa): PE1 0.706  PE2-4 0.557  gap +0.149  (n PE2-4=458)
+  L2 (  222-  350 aa): PE1 0.736  PE2-4 0.249  gap +0.487  (n PE2-4=520)
+  L3 (  351-  502 aa): PE1 0.750  PE2-4 0.365  gap +0.385  (n PE2-4=126)
+  L4 (  503-  772 aa): PE1 0.776  PE2-4 0.350  gap +0.427  (n PE2-4=93)
+  L5 (  773-34,350 aa): PE1 0.865  PE2-4 0.404  gap +0.461  (n PE2-4=58)
+
+prospective check: PE2-4 in the previous export, PE1 now
+previously missing 1,338: promoted to PE1 90, still missing 1,247
+ median P(detect): promoted 0.646  still missing 0.380  (one-sided Mann-Whitney promoted > still missing: p=1.04e-13)
+zero unique peptides: promoted 3.3%  still missing 15.0%
+the scorer sees sequence only, so this is a forward test at the resolution
+one UniProt release cycle allows. Promotions can come from non-MS evidence.

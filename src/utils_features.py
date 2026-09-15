@@ -24,14 +24,20 @@ KD = {
     "P": -1.6, "S": -0.8, "T": -0.7, "W": -0.9, "Y": -1.3, "V": 4.2,
 }
 
-
-MONO = {  # monoisotopic residue masses
+# monoisotopic residue masses
+MONO = {
     "G": 57.021464, "A": 71.037114, "S": 87.032028, "P": 97.052764, "V": 99.068414,
     "T": 101.047679, "C": 103.009185, "L": 113.084064, "I": 113.084064, "N": 114.042927,
     "D": 115.026943, "Q": 128.058578, "K": 128.094963, "E": 129.042593, "M": 131.040485,
     "H": 137.058912, "F": 147.068414, "R": 156.101111, "Y": 163.063329, "W": 186.079313,
     "U": 150.953636, "O": 237.147727,
 }
+
+# avg residue masses
+AA_MASS = dict(A=71.0788, R=156.1875, N=114.1038, D=115.0886, C=103.1388,
+               E=129.1155, Q=128.1307, G=57.0519, H=137.1411, I=113.1594,
+               L=113.1594, K=128.1741, M=131.1926, F=147.1766, P=97.1167,
+               S=87.0782, T=101.1051, W=186.2132, Y=163.1760, V=99.1326)
 
 
 WIN = (7, 30)
@@ -72,6 +78,11 @@ def _digest(seq):
 
 def _pep_mass(p):
     return sum(MONO.get(a, 0.0) for a in p) + WATER
+
+
+# Redundancy need to merge later.
+def _mol_weight(seq):
+    return sum(AA_MASS.get(a, 0.0) for a in seq) + WATER
 
 
 def _slow_cleave(seq, start, end):
@@ -123,17 +134,17 @@ def _pI(seq):
     return round((lo + hi) / 2, 2)
 
 
-def _tryptic_7_30(seq, start=1, end=None):
-    if not seq:
-        return 0
+def _tryptic_count(seq, lo=7, hi=30, start=1, end=None):
     end = end or len(seq)
-    pos, n = 0, 0
-    for frag in re.split(r"(?<=[KR])(?!P)", seq):
-        if not frag:
-            continue
-        a, b = pos + 1, pos + len(frag)
-        pos += len(frag)
-        if 7 <= len(frag) <= 30 and a >= start and b <= end:
+    cuts = [0]
+    for i in range(len(seq) - 1):
+        if seq[i] in "KR" and seq[i + 1] != "P":
+            cuts.append(i + 1)
+    if not seq or cuts[-1] != len(seq):
+        cuts.append(len(seq))
+    n = 0
+    for a, b in zip(cuts[:-1], cuts[1:]):
+        if lo <= (b - a) <= hi and a + 1 >= start and b <= end:
             n += 1
     return n
 
@@ -269,7 +280,7 @@ def build_features(path_uniprot, path_gene_dict, path_gene_features):
             pI=_pI(mature),
             n_tm=len(re.findall(r"TRANSMEM", r[c_tm])) if c_tm else 0,
             has_signal=int(bool((r[c_sig] or "").strip())) if c_sig else 0,
-            n_tryptic_7_30=_tryptic_7_30(seq, m_start, m_end),
+            n_tryptic_7_30=_tryptic_count(seq, m_start, m_end),
             mature_start=m_start,
             mature_end=m_end,
             mature_length=m_end - m_start + 1,
@@ -684,3 +695,35 @@ def read_half_life(sym2ensg, path_to_HL, human_types, qual):
     n = d["ensg"].notna().sum()
     print(f"half-life {len(h):,} symbols in file, {len(d):,} with a usable human value, {n:,} mapped to ENSG")
     return d.dropna(subset=["ensg"]).drop_duplicates("ensg").drop(columns="symbol")
+
+
+def _boot_auc(y, p, n=1000, seed=1):
+    from sklearn.metrics import roc_auc_score
+    rng = np.random.default_rng(seed)
+    b = []
+    for _ in range(n):
+        i = rng.integers(0, len(y), len(y))
+        if len(np.unique(y[i])) > 1:
+            b.append(roc_auc_score(y[i], p[i]))
+    return float(roc_auc_score(y, p)), float(np.percentile(b, 2.5)), float(np.percentile(b, 97.5))
+
+
+def _boot_diff(y, pa, pb, n=1000, seed=2):
+    from sklearn.metrics import roc_auc_score
+    rng = np.random.default_rng(seed)
+    d = []
+    for _ in range(n):
+        i = rng.integers(0, len(y), len(y))
+        if len(np.unique(y[i])) > 1:
+            d.append(roc_auc_score(y[i], pa[i]) - roc_auc_score(y[i], pb[i]))
+    return (float(roc_auc_score(y, pa) - roc_auc_score(y, pb)),
+            float(np.percentile(d, 2.5)), float(np.percentile(d, 97.5)))
+
+
+def _oof_auc(X, y, groups, seed=0):
+    from sklearn.ensemble import HistGradientBoostingClassifier
+    from sklearn.model_selection import StratifiedGroupKFold, cross_val_predict
+    cv = StratifiedGroupKFold(5, shuffle=True, random_state=seed)
+    gbm = HistGradientBoostingClassifier(max_iter=300, learning_rate=0.05,
+                                         max_depth=4, random_state=0)
+    return cross_val_predict(gbm, X, y, cv=cv, groups=groups, method="predict_proba")[:, 1]
