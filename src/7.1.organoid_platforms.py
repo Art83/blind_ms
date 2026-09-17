@@ -20,6 +20,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from config import DATA_DIR, TAB_DIR
+from utils_validation import build_resolver
 
 ORG = DATA_DIR / "organoids"
 SOMA = {
@@ -60,43 +61,6 @@ def read_adat(path):
     vals.columns = col_meta["SeqId"]
     col_meta = pd.DataFrame(col_meta)
     return vals, row_meta, col_meta
-
-
-def build_resolver():
-    fp = (pd.read_csv(TAB_DIR / "features_protein.tsv", sep="\t", usecols=["ensg", "uniprot"])
-          .dropna().drop_duplicates("uniprot"))
-    uni2ensg = dict(zip(fp["uniprot"], fp["ensg"]))
-    gd = (pd.read_csv(TAB_DIR / "gene_dict.tsv", sep="\t", dtype=str)
-          .dropna(subset=["symbol", "ensg"]).drop_duplicates("symbol"))
-    sym2ensg = dict(zip(gd["symbol"], gd["ensg"]))
-    us = pd.read_csv(DATA_DIR / "uniprot_human.tsv", sep="\t",
-                     usecols=["Entry", "Gene Names (primary)", "Ensembl"])
-    acc2sym = dict(zip(us["Entry"], us["Gene Names (primary)"]))
-    acc2enst = {}
-    for acc, ens in zip(us["Entry"], us["Ensembl"].fillna("")):
-        acc2enst[acc] = [t.strip().split(" ")[0].split(".")[0] for t in ens.split(";") if t.strip().startswith("ENST")]
-    gi = pd.read_csv(DATA_DIR / "Gene_info.txt", sep="\t", usecols=["Transcript ID", "Gene ID"], dtype=str)
-    enst2ensg = dict(zip(gi["Transcript ID"].str.split(".").str[0], gi["Gene ID"].str.split(".").str[0]))
-
-    def resolve(uniprot=None, gene=None):
-        if isinstance(uniprot, str) and uniprot:
-            for tok in uniprot.replace("|", ";").replace(",", ";").split(";"):
-                acc = tok.split("-")[0].strip()
-                if acc in uni2ensg:
-                    return uni2ensg[acc]
-                for t in acc2enst.get(acc, ()):
-                    if t in enst2ensg:
-                        return enst2ensg[t]
-                s = acc2sym.get(acc)
-                if isinstance(s, str) and s in sym2ensg:
-                    return sym2ensg[s]
-        if isinstance(gene, str) and gene:
-            g = gene.split(";")[0].strip()
-            if g in sym2ensg:
-                return sym2ensg[g]
-        return None
-
-    return resolve
 
 
 def meta_affinity(company):

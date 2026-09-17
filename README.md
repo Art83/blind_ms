@@ -66,9 +66,11 @@ if all necessary files are in `data/` (see more below the details of each datase
 | 16 | `multiprotease_rescue.py`        | Diagnostics         |  `proteinGroups.txt`, `peptides.txt` (PXD024364 MaxQuant txt), `ensp2ensg.txt`, `uniprot_human.tsv`, `model_table.tsv`, `features_protein.tsv`, `gene_dict.tsv`                                            | `multiprotease_rescue.tsv`                                                        |
 
 ## Translation
-| # | Script                    | Reads | Writes |
-|---|---------------------------|-------|--------|
-| 1 | `7.organoid_platforms.py` | `organoids/somalogic/*medNormSMP*.adat`, `organoids/olink/olink_slim.csv`, `organoids/MS/Human_report.pg_matrix.tsv`, `organoids/gen_meta.csv`, `organoids/MS_meta.csv`, `features_protein.tsv`, `gene_dict.tsv`, `uniprot_human.tsv` | `organoid_long.tsv`, `organoid_features.tsv`, `organoid_platforms.txt` |
+| # | Script                       | Reads                                                                                                                                                                                                                                 | Writes                                                                                                                          |
+|---|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+| 1 | `7.1.organoid_platforms.py`  | `organoids/somalogic/*medNormSMP*.adat`, `organoids/olink/olink_slim.csv`, `organoids/MS/Human_report.pg_matrix.tsv`, `organoids/gen_meta.csv`, `organoids/MS_meta.csv`, `features_protein.tsv`, `gene_dict.tsv`, `uniprot_human.tsv` | `organoid_long.tsv`, `organoid_features.tsv`, `organoid_platforms.txt`                                                          |
+| 2 | `7.2.organoid_validation.py` | `organoid_long.tsv`, `organoid_features.tsv`, `ml_per_gene_predictions.tsv`, `features_protein.tsv`, `features_peptides.tsv`, `proteome_census.tsv`                                                                                   | `organoid_validation.txt`, `organoid_gene_table.tsv`, `organoid_inference_dark.csv`, `organoid_missing_proteome_candidates.csv` |
+| 3 | `8.biofluid_validation.py`   | `data/external_validation/*` (Dammer et al. 2022 Emory CSF and plasma: TMT-MS, SomaScan, Olink), `ml_per_gene_predictions.tsv`, `features_protein.tsv`, `features_peptides.tsv`, `gene_dict.tsv`, `uniprot_human.tsv`                 | `biofluid_gene_table.tsv`, `biofluid_validation.txt`                                                                            |
 
 
 ## Data provenance 

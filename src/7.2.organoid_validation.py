@@ -46,56 +46,20 @@ Tests this scripts runs:
   T9  missing proteome PE2-4 proteins affinity-present in organoids
 """
 from __future__ import annotations
-import sys
-from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
-from sklearn.metrics import roc_auc_score
 import statsmodels.api as sm
 
+
 from config import TAB_DIR
+from utils_validation import PEP_COLS, FEAT_COLS, z, auc, logit
 
 PRESENT_FRAC = 0.70
 LINES = ("TDR1", "TDR4")
 ARMS = ("Organoid", "Media")
 PLATS = ("MS", "SomaScan", "Olink")
 SHORT = {"MS": "ms", "SomaScan": "soma", "Olink": "olink"}
-PEP_COLS = ["pep_n_unique", "pep_frac_shared", "pep_max_shared_genes", "pep_n_clean"]
-FEAT_COLS = ["uniprot", "tryptic_per_kda", "n_tryptic_7_30", "mol_weight_kDa", "n_tm",
-             "is_secreted", "has_signal", "is_membrane", "disorder_fraction_proxy"]
-
-
-def z(x):
-    x = pd.to_numeric(x, errors="coerce")
-    s = x.std(ddof=0)
-    return (x - x.mean()) / s if s and s > 0 else x * 0.0
-
-
-def auc(y, x):
-    y = np.asarray(y)
-    m = np.isfinite(np.asarray(x, dtype=float))
-    return float(roc_auc_score(y[m], np.asarray(x, dtype=float)[m])) if len(np.unique(y[m])) > 1 else float("nan")
-
-
-def logit(d, y, preds, label, L, min_n=40):
-    dd = d[[y] + preds].replace([np.inf, -np.inf], np.nan).dropna()
-    if dd[y].nunique() < 2 or len(dd) < min_n or dd[y].sum() < 10 or (dd[y] == 0).sum() < 10:
-        L.append(f"     {label}: too few to fit (n={len(dd)}, pos={int(dd[y].sum()) if len(dd) else 0})")
-        return None
-    X = sm.add_constant(pd.DataFrame({p: z(dd[p]) for p in preds}))
-    try:
-        m = sm.Logit(dd[y].values, X).fit(disp=0, maxiter=200)
-        if not m.mle_retvals.get("converged", True):
-            m = sm.Logit(dd[y].values, X).fit(disp=0, maxiter=500, method="bfgs")
-    except Exception as e:
-        L.append(f"     {label}: fit failed ({e.__class__.__name__})")
-        return None
-    bad = (not m.mle_retvals.get("converged", True)) or bool(np.isnan(m.pvalues[preds]).any())
-    flag = "DID NOT CONVERGE or separated" if bad else ""
-    parts = "  ".join(f"{p} b={m.params[p]:+.3f} p={m.pvalues[p]:.1e}" for p in preds)
-    L.append(f" {label} (n={len(dd):,}, pos={int(dd[y].sum()):,}): {parts}{flag}")
-    return m
 
 
 def gene_table(out):
@@ -147,7 +111,6 @@ def annotate(g, out):
     return g
 
 
-# ---------------------------------------------------------------- tests
 def t0_concordance(g, L):
     L.append("T0 concordance. Spearman of abundance across platforms (shared ENSG):")
     for arm in ARMS:
