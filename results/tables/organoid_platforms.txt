@@ -1,0 +1,44 @@
+Organoids: raw-file rebuild
+
+SomaScan Organoid samples 10, buffers 3, human protein aptamers 10,776, matched to gen_meta 10
+[SomaScan Organoid] LoD sensitivity k=3: aptamers present 10,762 of 10,776 (99.9%)
+[SomaScan Organoid] LoD sensitivity k=5: aptamers present 10,742 of 10,776 (99.7%)
+[SomaScan Organoid] LoD sensitivity k=10: aptamers present 10,664 of 10,776 (99.0%)
+SomaScan Media samples 11, buffers 9, human protein aptamers 10,776, matched to gen_meta 10, dropped unmatched ['91101']
+[SomaScan Media] LoD sensitivity k=3: aptamers present 7,239 of 10,776 (67.2%)
+[SomaScan Media] LoD sensitivity k=5: aptamers present 6,054 of 10,776 (56.2%)
+[SomaScan Media] LoD sensitivity k=10: aptamers present 4,494 of 10,776 (41.7%)
+Olink negative-control samples 2, LoD = median + 3 SD per assay, plus Count >= 150
+Olink assays 5,400, samples matched 20, dropped unmatched ['10216', '93200']
+[MS] protein groups 10,692, sample columns 21, kept 20, dropped ['M-0C']
+[reconcile SomaScan Organoid] n=13,313  mean abundance |diff| median 0.0000 max 10.000   R detection_rate mean 1.000  LoD-based det_rate mean 0.998  present 13,289
+[reconcile SomaScan Media] n=13,313  mean abundance |diff| median 0.0000 max 9.857   R detection_rate mean 1.000  LoD-based det_rate mean 0.712  present 8,851
+[reconcile Olink Organoid] n=5,400  mean abundance |diff| median 0.0000 max 0.000   R detection_rate mean 1.000  LoD-based det_rate mean 0.590  present 3,050
+[reconcile Olink Media] n=5,400  mean abundance |diff| median 0.0000 max 0.000   R detection_rate mean 1.000  LoD-based det_rate mean 0.339  present 1,627
+
+sample table (platform x arm x line):
+  platform      arm line genotype  sample
+        MS    Media TDR1  Control       5
+        MS    Media TDR4       AD       5
+        MS Organoid TDR1  Control       5
+        MS Organoid TDR4       AD       5
+     Olink    Media TDR1  Control       5
+     Olink    Media TDR4       AD       5
+     Olink Organoid TDR1  Control       5
+     Olink Organoid TDR4       AD       5
+  SomaScan    Media TDR1  Control       5
+  SomaScan    Media TDR4       AD       5
+  SomaScan Organoid TDR1  Control       5
+  SomaScan Organoid TDR4       AD       5
+
+per-platform features and presence (above LoD in >= 70% of samples):
+MS        Media     features 10,692  present    661  ENSG-mapped present    651  ENSG map rate 98.2%  present in both lines    549  one line only   235
+MS        Organoid  features 10,692  present  9,971  ENSG-mapped present  9,806  ENSG map rate 98.2%  present in both lines  9,599  one line only   636
+Olink     Media     features  5,400  present  1,627  ENSG-mapped present  1,593  ENSG map rate 96.2%  present in both lines  1,489  one line only   234
+Olink     Organoid  features  5,400  present  3,050  ENSG-mapped present  2,984  ENSG map rate 96.2%  present in both lines  2,920  one line only   266
+SomaScan  Media     features 10,776  present  7,239  ENSG-mapped present  6,490  ENSG map rate 97.2%  present in both lines  6,618  one line only   906
+SomaScan  Organoid  features 10,776  present 10,762  ENSG-mapped present  9,284  ENSG map rate 97.2%  present in both lines 10,756  one line only     7
+
+  LoD Olink both: median -0.14 (log2 units), IQR -2.65-1.57
+  LoD SomaScan Media: median 7.75 (log2 units), IQR 6.93-8.51
+  LoD SomaScan Organoid: median 7.92 (log2 units), IQR 7.15-8.66

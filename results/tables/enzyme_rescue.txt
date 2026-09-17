@@ -1,0 +1,19 @@
+In silico rescue
+observable window 7-30 aa; recoverable = >=2 observable peptides; isoform pick = longest
+proteins scored: 14,826
+
+--- structural (all mapped proteins): n=14,826, trypsin-yield-limited (<2 obs pep) = 38 (0.3%) ---
+lysc           rescues     7 / 38  (18.4%)
+gluc           rescues    20 / 38  (52.6%)
+gluc_de        rescues    27 / 38  (71.1%)
+chymotrypsin   rescues    32 / 38  (84.2%)
+aspn           rescues    16 / 38  (42.1%)
+ANY alternative rescues    35 / 38  (92.1%)
+
+--- empirical (IHC-present but MS-dark in GTEx everywhere): n=2,959, trypsin-yield-limited (<2 obs pep) = 16 (0.5%) ---
+lysc           rescues     3 / 16  (18.8%)
+gluc           rescues     9 / 16  (56.2%)
+gluc_de        rescues    11 / 16  (68.8%)
+chymotrypsin   rescues    14 / 16  (87.5%)
+aspn           rescues     7 / 16  (43.8%)
+ANY alternative rescues    15 / 16  (93.8%)

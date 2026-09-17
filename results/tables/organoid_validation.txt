@@ -1,0 +1,164 @@
+ogranoid detectability (three platforms, two compartments, two lines)
+
+design: 5 TDR1 (control) + 5 TDR4 (AD) organoids per compartment on every platform.
+genotype is confounded with line, so line is a replication tool and no disease claim is made.
+presence = above LoD in >= 70% of samples (organoid_platforms.py).
+
+[Organoid] present ENSG: MS 9,806  SomaScan 9,284  Olink 2,984   MS&Soma&Olink 1,716  Soma&Olink 2,155  MS-only 3,557  affinity-only 3,864
+[Media] present ENSG: MS 651  SomaScan 6,490  Olink 1,593   MS&Soma&Olink 195  Soma&Olink 1,086  MS-only 127  affinity-only 6,473
+
+T0 concordance. Spearman of abundance across platforms (shared ENSG):
+ Organoid  soma~olink rho=0.30 (n=2,155)   soma~ms rho=0.38 (n=5,583)   olink~ms rho=0.14 (n=2,382)
+ Media     soma~olink rho=0.29 (n=1,086)   soma~ms rho=0.04 (n=503)   olink~ms rho=0.07 (n=216)
+
+T0b covariate reliability -- affinity abundance across the five replicates per line:
+Olink     Media     TDR1: features 1,787, median within-line SD 0.48 log2, median CV 0.253, ICC(1) 0.961 | TDR4: features 1,762, median within-line SD 0.42 log2, median CV 0.242, ICC(1) 0.958
+Olink     Organoid  TDR1: features 3,180, median within-line SD 0.26 log2, median CV 0.058, ICC(1) 0.986 | TDR4: features 3,142, median within-line SD 0.32 log2, median CV 0.069, ICC(1) 0.980
+SomaScan  Media     TDR1: features 7,523, median within-line SD 0.08 log2, median CV 0.009, ICC(1) 0.995 | TDR4: features 7,823, median within-line SD 0.09 log2, median CV 0.011, ICC(1) 0.992
+SomaScan  Organoid  TDR1: features 10,764, median within-line SD 0.11 log2, median CV 0.010, ICC(1) 0.992 | TDR4: features 10,767, median within-line SD 0.10 log2, median CV 0.009, ICC(1) 0.994
+ between-line agreement of the line means (Spearman across features present in both lines):
+   Olink     Media     n=2,077  rho=0.964
+   Olink     Organoid  n=3,298  rho=0.978
+   SomaScan  Media     n=8,535  rho=0.987
+   SomaScan  Organoid  n=10,773  rho=0.993
+
+T1 presence. structural score (abundance-free), MS-caught vs MS-missed among affinity-present:
+Organoid  among Olink-present    n=2,463  MS-missed 399  AUC 0.725   within line: TDR1 0.717, TDR4 0.731
+Organoid  among SomaScan-present n=6,849  MS-missed 2,089  AUC 0.735   within line: TDR1 0.729, TDR4 0.740
+Media     among Olink-present    n=1,291  MS-missed 1,105  AUC 0.661   within line: TDR1 0.654, TDR4 0.653
+Media     among SomaScan-present n=4,926  MS-missed 4,479  AUC 0.720   within line: TDR1 0.710, TDR4 0.711
+
+T2 COREMS detection ~ p_detect_intrinsic + affinity abundance, per platform:
+   [Organoid]
+ SomaScan  pooled  (n=6,849, pos=4,760): z_struct b=+0.809 p=3.4e-154  z_ab b=+0.677 p=2.2e-85
+ SomaScan  TDR1    (n=6,846, pos=4,742): z_struct b=+0.781 p=6.6e-146  z_ab b=+0.698 p=2.2e-90
+ SomaScan  TDR4    (n=6,848, pos=4,726): z_struct b=+0.851 p=1.4e-165  z_ab b=+0.662 p=7.5e-83
+ Olink     pooled  (n=2,463, pos=2,064): z_struct b=+0.678 p=3.6e-32  z_ab b=+1.274 p=8.3e-68
+ Olink     TDR1    (n=2,492, pos=2,083): z_struct b=+0.627 p=1.0e-28  z_ab b=+1.296 p=2.5e-70
+ Olink     TDR4    (n=2,444, pos=2,032): z_struct b=+0.753 p=2.0e-38  z_ab b=+1.279 p=1.9e-68
+ both      pooled  (n=1,781, pos=1,489): z_struct b=+0.644 p=2.0e-19  z_soma b=+0.672 p=5.5e-11  z_olink b=+1.257 p=6.1e-44
+   [Media]
+ SomaScan  pooled  (n=4,926, pos=447): z_struct b=+1.234 p=5.1e-30  z_ab b=+0.955 p=3.5e-88
+ SomaScan  TDR1    (n=4,880, pos=487): z_struct b=+1.088 p=4.3e-29  z_ab b=+0.957 p=1.0e-92
+ SomaScan  TDR4    (n=4,761, pos=403): z_struct b=+1.197 p=2.2e-26  z_ab b=+0.973 p=1.5e-84
+ Olink     pooled  (n=1,291, pos=186): z_struct b=+0.772 p=5.6e-09  z_ab b=+1.006 p=9.4e-22
+ Olink     TDR1    (n=1,284, pos=193): z_struct b=+0.709 p=1.3e-08  z_ab b=+1.031 p=5.4e-23
+ Olink     TDR4    (n=1,268, pos=170): z_struct b=+0.701 p=1.3e-07  z_ab b=+1.076 p=1.1e-22
+ both      pooled  (n=887, pos=170): z_struct b=+0.943 p=4.7e-09  z_soma b=+0.943 p=5.3e-19  z_olink b=+0.799 p=5.7e-11
+ -> z_struct positive and significant with a non-MS abundance term in the model,
+in both compartments and both lines, is the chemistry claim.
+
+T2b raw featureMS detection ~ tryptic_per_kda + affinity abundance, per platform:
+   [Organoid]
+ SomaScan  pooled  (n=7,818, pos=5,022): z_struct b=+0.360 p=5.8e-44  z_ab b=+0.745 p=4.9e-141
+ SomaScan  TDR1    (n=7,815, pos=5,015): z_struct b=+0.355 p=6.5e-43  z_ab b=+0.761 p=2.6e-145
+ SomaScan  TDR4    (n=7,817, pos=4,986): z_struct b=+0.365 p=1.9e-45  z_ab b=+0.731 p=1.8e-138
+ Olink     pooled  (n=2,669, pos=2,183): z_struct b=+0.247 p=1.9e-05  z_ab b=+1.289 p=4.8e-84
+ Olink     TDR1    (n=2,705, pos=2,203): z_struct b=+0.232 p=5.2e-05  z_ab b=+1.331 p=1.2e-87
+ Olink     TDR4    (n=2,646, pos=2,148): z_struct b=+0.242 p=2.5e-05  z_ab b=+1.275 p=3.1e-83
+ both      pooled  (n=1,932, pos=1,575): z_struct b=+0.325 p=1.1e-05  z_soma b=+0.755 p=7.2e-16  z_olink b=+1.276 p=2.4e-53
+   [Media]
+ SomaScan  pooled  (n=5,519, pos=478): z_struct b=+0.355 p=7.3e-11  z_ab b=+0.986 p=1.8e-110
+ SomaScan  TDR1    (n=5,469, pos=519): z_struct b=+0.357 p=1.1e-11  z_ab b=+0.981 p=4.5e-113
+ SomaScan  TDR4    (n=5,324, pos=432): z_struct b=+0.331 p=6.0e-09  z_ab b=+1.002 p=2.8e-105
+ Olink     pooled  (n=1,423, pos=210): z_struct b=+0.219 p=5.6e-03  z_ab b=+0.999 p=6.3e-26
+ Olink     TDR1    (n=1,416, pos=213): z_struct b=+0.234 p=3.0e-03  z_ab b=+1.009 p=3.2e-26
+ Olink     TDR4    (n=1,402, pos=193): z_struct b=+0.199 p=1.5e-02  z_ab b=+1.081 p=3.4e-27
+ both      pooled  (n=973, pos=189): z_struct b=+0.359 p=2.3e-04  z_soma b=+0.964 p=7.7e-23  z_olink b=+0.774 p=4.1e-12
+
+T2c abundance strata score with affinity abundance as quintile dummies, and within each quintile:
+Organoid  SomaScan  quintile dummies (n=6,849): z_struct b=+0.817 p=1.3e-156
+   Organoid  SomaScan  within quintile (low to high): Q1 +0.79*, Q2 +0.78*, Q3 +0.75*, Q4 +0.84*, Q5 +0.90*   (* p<0.05)
+Organoid  Olink     quintile dummies (n=2,463): z_struct b=+0.683 p=5.3e-34
+   Organoid  Olink     within quintile (low to high): Q1 +0.63*, Q2 +0.90*, Q3 +0.55*, Q4 +0.63*, Q5 +0.64*   (* p<0.05)
+Media     SomaScan  quintile dummies (n=4,926): z_struct b=+1.180 p=2.2e-29
+   Media     SomaScan  within quintile (low to high): Q1 +1.39*, Q2 +1.63*, Q3 +2.42*, Q4 +0.95*, Q5 +1.01*   (* p<0.05)
+Media     Olink     quintile dummies (n=1,291): z_struct b=+0.788 p=4.2e-09
+   Media     Olink     within quintile (low to high): Q1 +0.89, Q2 +1.07*, Q3 +1.63*, Q4 +0.46*, Q5 +0.73*   (* p<0.05)
+
+T3 platform specificity, same predictors against SomaScan vs Olink disagreement:
+outcome = present on exactly one affinity platform, among proteins on both panels.
+ a score that predicts MS loss but not affinity disagreement measures MS chemistry.
+Organoid] n on both panels 3,616, disagree 1,458
+ affinity disagreement (n=2,689, pos=907): z_struct b=-0.127 p=1.0e-02  z_ab b=-1.612 p=5.4e-122
+ MS loss (same rows)   (n=2,688, pos=1,793): z_struct b=+0.640 p=2.0e-28  z_ab b=+2.078 p=6.9e-129
+|z_soma - z_olink| vs structural score: Spearman r=+0.047 p=1.4e-02
+Media] n on both panels 3,616, disagree 1,703
+ affinity disagreement (n=2,689, pos=1,244): z_struct b=+0.024 p=5.5e-01  z_ab b=-0.372 p=1.5e-18
+ MS loss (same rows)   (n=2,131, pos=211): z_struct b=+1.037 p=3.0e-12  z_ab b=+1.467 p=6.9e-56
+|z_soma - z_olink| vs structural score: Spearman r=+0.003 p=8.9e-01
+
+T4 graded outcome, MS replicate detection rate among affinity present proteins:
+   pooled: never = 0 of 10, intermittent = 1-9 of 10, always = 10 of 10; per line: k of 5
+   [Organoid pooled]
+     never        n=1,928  median score 0.716  median affinity abundance z +0.05  median tryptic/kDa 0.393
+     intermittent n=  728  median score 0.782  median affinity abundance z +0.32  median tryptic/kDa 0.410
+     always       n=4,875  median score 0.886  median affinity abundance z +0.95  median tryptic/kDa 0.423
+ never vs intermittent (n=2,656, pos=1,928): z_struct b=-0.341 p=9.0e-13  z_ab b=-0.335 p=1.5e-14
+top-tertile affinity abundance: never 239, intermittent 125, always 2,197
+   [Organoid TDR1]
+     never        n=1,968  median score 0.718  median affinity abundance z +0.05  median tryptic/kDa 0.393
+     intermittent n=  443  median score 0.780  median affinity abundance z +0.34  median tryptic/kDa 0.413
+     always       n=5,127  median score 0.884  median affinity abundance z +0.92  median tryptic/kDa 0.422
+ never vs intermittent (n=2,411, pos=1,968): z_struct b=-0.297 p=2.2e-07  z_ab b=-0.335 p=4.7e-11
+top-tertile affinity abundance: never 245, intermittent 77, always 2,241
+   [Organoid TDR4]
+     never        n=1,980  median score 0.718  median affinity abundance z +0.05  median tryptic/kDa 0.393
+     intermittent n=  564  median score 0.785  median affinity abundance z +0.34  median tryptic/kDa 0.412
+     always       n=4,979  median score 0.885  median affinity abundance z +0.94  median tryptic/kDa 0.422
+ never vs intermittent (n=2,544, pos=1,980): z_struct b=-0.359 p=1.3e-11  z_ab b=-0.323 p=6.2e-12
+top-tertile affinity abundance: never 246, intermittent 96, always 2,216
+   [Media pooled]
+     never        n=4,202  median score 0.835  median affinity abundance z -0.59  median tryptic/kDa 0.412
+     intermittent n=  828  median score 0.923  median affinity abundance z -0.20  median tryptic/kDa 0.424
+     always       n=  300  median score 0.933  median affinity abundance z +0.49  median tryptic/kDa 0.440
+ never vs intermittent (n=5,030, pos=4,202): z_struct b=-0.967 p=4.6e-47  z_ab b=-0.569 p=5.1e-48
+top-tertile affinity abundance: never 1,156, intermittent 431, always 225
+   [Media TDR1]
+     never        n=4,277  median score 0.838  median affinity abundance z -0.57  median tryptic/kDa 0.411
+     intermittent n=  614  median score 0.924  median affinity abundance z -0.23  median tryptic/kDa 0.427
+     always       n=  399  median score 0.929  median affinity abundance z +0.48  median tryptic/kDa 0.441
+ never vs intermittent (n=4,891, pos=4,277): z_struct b=-0.941 p=2.5e-35  z_ab b=-0.491 p=3.5e-31
+top-tertile affinity abundance: never 1,187, intermittent 309, always 303
+   [Media TDR4]
+     never        n=4,348  median score 0.840  median affinity abundance z -0.55  median tryptic/kDa 0.412
+     intermittent n=  497  median score 0.929  median affinity abundance z -0.17  median tryptic/kDa 0.432
+     always       n=  332  median score 0.933  median affinity abundance z +0.42  median tryptic/kDa 0.441
+ never vs intermittent (n=4,845, pos=4,348): z_struct b=-1.186 p=3.1e-35  z_ab b=-0.540 p=2.4e-31
+top-tertile affinity abundance: never 1,255, intermittent 265, always 240
+outcome is never=1, so a negative z_struct means higher structural score
+
+T5 quantitative deficit, among MS-detected, MS intensity residual after affinity abundance:
+Organoid  vs Olink     n=2,064  residual~score r=+0.355 p=2.5e-62   ~tryptic/kDa r=+0.134 p=9.4e-10   ~unique peptides r=-0.082 p=1.8e-04
+Organoid  vs SomaScan  n=4,760  residual~score r=+0.373 p=2.7e-157   ~tryptic/kDa r=+0.116 p=8.8e-16   ~unique peptides r=-0.014 p=3.5e-01
+Media     vs Olink     n=186  residual~score r=+0.285 p=8.0e-05   ~tryptic/kDa r=+0.022 p=7.6e-01   ~unique peptides r=-0.072 p=3.3e-01
+Media     vs SomaScan  n=447  residual~score r=+0.269 p=7.9e-09   ~tryptic/kDa r=+0.088 p=6.4e-02   ~unique peptides r=-0.070 p=1.4e-01
+
+T6 inference-dark -- no unique tryptic peptide, vs MS detection at matched affinity abundance:
+   Organoid  zero_unique    n=  75  MS-present 16.0% (all affinity-present 65.8%)  median affinity abundance z +0.43
+ zero_unique    + abundance (n=8,555, pos=5,630): zero_unique b=-0.299 p=3.1e-19  z_ab b=+1.139 p=3.7e-280
+   Organoid  mostly_shared  n= 365  MS-present 47.9% (all affinity-present 65.8%)  median affinity abundance z +0.54
+ mostly_shared  + abundance (n=8,555, pos=5,630): mostly_shared b=-0.201 p=1.1e-15  z_ab b=+1.125 p=8.2e-279
+Organoid  DIA-NN N.Proteotypic.Sequences vs in-silico unique peptides (MS-detected, n=5,630): Spearman r=+0.631 p=0.0e+00   groups with 0 proteotypic sequences 56
+   Media     zero_unique    n=  52  MS-present 11.5% (all affinity-present 8.4%)  median affinity abundance z -0.33
+ zero_unique    + abundance (n=5,969, pos=499): zero_unique b=-0.049 p=3.0e-01  z_ab b=+1.027 p=2.3e-114
+   Media     mostly_shared  n= 258  MS-present 14.3% (all affinity-present 8.4%)  median affinity abundance z -0.52
+ mostly_shared  + abundance (n=5,969, pos=499): mostly_shared b=+0.103 p=1.6e-02  z_ab b=+1.019 p=2.0e-113
+Media     DIA-NN N.Proteotypic.Sequences vs in-silico unique peptides (MS-detected, n=499): Spearman r=+0.736 p=2.3e-86   groups with 0 proteotypic sequences 29
+
+T7 lysate to media (paired), affinity-present in both compartments and MS-present in lysate:
+outcome = MS still present in media. Secretion route vs structure vs abundance change.
+   Olink     n=1,256  MS kept in media 205 (16.3%)  secreted among kept 38.0% vs lost 12.3%
+ kept ~ structure + affinity change + secreted (n=1,087, pos=178): z_struct b=+1.104 p=7.4e-12  d_ab b=+1.696 p=3.5e-34  secreted b=+0.035 p=7.0e-01
+ kept ~ structure + affinity change + signal   (n=1,087, pos=178): z_struct b=+1.030 p=2.7e-10  d_ab b=+1.803 p=1.1e-36  signal b=-0.172 p=1.1e-01
+   SomaScan  n=4,262  MS kept in media 497 (11.7%)  secreted among kept 22.9% vs lost 7.1%
+ kept ~ structure + affinity change + secreted (n=3,656, pos=443): z_struct b=+0.972 p=2.4e-27  d_ab b=+0.417 p=4.4e-14  secreted b=+0.301 p=3.4e-12
+ kept ~ structure + affinity change + signal   (n=3,656, pos=443): z_struct b=+0.965 p=4.5e-27  d_ab b=+0.464 p=8.2e-17  signal b=+0.174 p=5.9e-04
+
+T8 calibration. GTEx-trained P(detect) vs observed organoid MS detection, by decile (affinity-present):
+Organoid  n=7,531  0.40->0.32  0.60->0.47  0.71->0.64  0.78->0.69  0.83->0.75  0.87->0.78  0.90->0.81  0.93->0.83  0.95->0.86  0.98->0.93 slope 1.02
+Media     n=5,330  0.42->0.01  0.62->0.02  0.73->0.03  0.79->0.06  0.84->0.07  0.88->0.10  0.91->0.08  0.93->0.14  0.95->0.15  0.98->0.21 slope 0.31
+
+T9 missing proteome. PE2-4 proteins above affinity LoD in organoids (candidates, cross-reactivity not excluded):
+   Organoid  PE2-4 on panels 72, affinity-present 55, on both affinity platforms 1, MS-detected 1, median sequence only P(detect) 0.51
+   Media     PE2-4 on panels 72, affinity-present 27, on both affinity platforms 0, MS-detected 0, median sequence only P(detect) 0.52

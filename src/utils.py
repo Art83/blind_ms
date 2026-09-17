@@ -5,7 +5,7 @@ from typing import Tuple, Any
 
 import pandas as pd
 import numpy as np
-from config import TISSUES, SUBSITE_AGG, IHC_ABSENT, IHC_PRESENT, RELIABILITY_ORDER, PAXDB_DIR
+from config import TISSUES, SUBSITE_AGG, IHC_ABSENT, IHC_PRESENT, RELIABILITY_ORDER, PAXDB_DIR, ISOFORM_PICK
 
 
 # General handling
@@ -607,3 +607,5 @@ def tune_gbm(Xtr, ytr, gtr, default, grid, n_inner, seed=0):
         if np.mean(aucs) > best_auc:
             best, best_auc = (d, lr), float(np.mean(aucs))
     return best
+
+

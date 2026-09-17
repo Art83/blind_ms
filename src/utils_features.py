@@ -110,12 +110,14 @@ def _slow_cleave(seq, start, end):
 
 def _charge(pH, counts):
     pos = 1.0 / (1 + 10 ** (pH - PK_POS["Nterm"]))
-    for aa, pk in (("K", PK_POS["K"]), ("R", PK_POS["R"]), ("H", PK_POS["H"])):
-        pos += counts.get(aa, 0) / (1 + 10 ** (pH - pk))
+    for aa in ("K", "R", "H"):
+        pos += counts.get(aa, 0) / (1 + 10 ** (pH - PK_POS[aa]))
     neg = 1.0 / (1 + 10 ** (PK_NEG["Cterm"] - pH))
-    for aa, pk in (("D", PK_NEG["D"]), ("E", PK_NEG["E"]), ("C", PK_NEG["C"]), ("Y", PK_NEG["Y"])):
-        neg += counts.get(aa, 0) / (1 + 10 ** (pk - pH))
+    for aa in ("D", "E", "C", "Y"):
+        neg += counts.get(aa, 0) / (1 + 10 ** (PK_NEG[aa] - pH))
     return pos - neg
+
+
 
 
 def _pI(seq):
@@ -135,16 +137,14 @@ def _pI(seq):
 
 
 def _tryptic_count(seq, lo=7, hi=30, start=1, end=None):
+    """Fully tryptic peptides of length lo..hi lying entirely inside [start, end]
+    (1-based, inclusive, precursor coordinates)."""
+    if not seq:
+        return 0
     end = end or len(seq)
-    cuts = [0]
-    for i in range(len(seq) - 1):
-        if seq[i] in "KR" and seq[i + 1] != "P":
-            cuts.append(i + 1)
-    if not seq or cuts[-1] != len(seq):
-        cuts.append(len(seq))
     n = 0
-    for a, b in zip(cuts[:-1], cuts[1:]):
-        if lo <= (b - a) <= hi and a + 1 >= start and b <= end:
+    for frag, a0, b0 in _digest(seq):
+        if lo <= len(frag) <= hi and a0 + 1 >= start and b0 <= end:
             n += 1
     return n
 
@@ -158,7 +158,7 @@ def _frac(seq, aa_set):
 
 
 def _n_glyco_motifs(seq):
-    return len(re.findall(r"(?=N[^P][ST])", seq))
+    return len(SEQUON.findall(seq))
 
 
 def _low_complexity_fraction(seq, win=20, entropy_thresh=2.2):
@@ -727,3 +727,19 @@ def _oof_auc(X, y, groups, seed=0):
     gbm = HistGradientBoostingClassifier(max_iter=300, learning_rate=0.05,
                                          max_depth=4, random_state=0)
     return cross_val_predict(gbm, X, y, cv=cv, groups=groups, method="predict_proba")[:, 1]
+
+
+def digest_with(seq, rule):
+    where, residues, excl_p = rule
+    n = len(seq)
+    cuts = [0]
+    for i, aa in enumerate(seq):
+        if where == "after":
+            if aa in residues and not (excl_p and i + 1 < n and seq[i + 1] == "P"):
+                cuts.append(i + 1)
+        else:
+            if aa in residues and i > 0:
+                cuts.append(i)
+    cuts.append(n)
+    cuts = sorted(set(cuts))
+    return [seq[a:b] for a, b in zip(cuts, cuts[1:])]
