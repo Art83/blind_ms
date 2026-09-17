@@ -743,3 +743,14 @@ def digest_with(seq, rule):
     cuts.append(n)
     cuts = sorted(set(cuts))
     return [seq[a:b] for a, b in zip(cuts, cuts[1:])]
+
+
+ENZYMES = {
+    "trypsin":      ("after",  "KR",  True),   # same rule as CUT
+    "lysc":         ("after",  "K",   True),
+    "gluc":         ("after",  "E",   False),  #ammonium bicarbonate
+    "gluc_de":      ("after",  "ED",  False),  #phosphate buffer variant
+    "chymotrypsin": ("after",  "FYW", True),   # aromatic
+    "aspn":         ("before", "D",   False),
+}
+ALTERNATIVES = ["lysc", "gluc", "gluc_de", "chymotrypsin", "aspn"]

@@ -9,6 +9,9 @@ PEP_COLS = ["pep_n_unique", "pep_frac_shared", "pep_max_shared_genes", "pep_n_cl
 FEAT_COLS = ["uniprot", "tryptic_per_kda", "n_tryptic_7_30", "mol_weight_kDa", "n_tm",
              "is_secreted", "has_signal", "is_membrane", "disorder_fraction_proxy"]
 
+MIN_CLEAN = 3
+ORDER = ["confirmable", "chemistry_limited", "inference_limited", "inference_locked", "unscored"]
+
 
 def z(x):
     x = pd.to_numeric(x, errors="coerce")
@@ -76,3 +79,25 @@ def build_resolver():
                 return sym2ensg[g]
         return None
     return resolve
+
+
+def read_adat(path):
+    with open(path, encoding="utf-8", errors="replace") as fh:
+        lines = [l.rstrip("\r\n") for l in fh]
+    tb = next(i for i, l in enumerate(lines) if l.startswith("^TABLE_BEGIN"))
+    rows = [l.split("\t") for l in lines[tb + 1:] if l != ""]
+    col_meta = {}
+    i = 0
+    while rows[i][0] == "":
+        r = rows[i]
+        k = next(j for j, c in enumerate(r) if c != "")
+        col_meta[r[k]] = r[k + 1:]
+        i += 1
+    n_rowmeta = k
+    header = rows[i][:n_rowmeta]
+    data = rows[i + 1:]
+    row_meta = pd.DataFrame([r[:n_rowmeta] for r in data], columns=header)
+    vals = pd.DataFrame([r[n_rowmeta + 1:] for r in data]).apply(pd.to_numeric, errors="coerce")
+    vals.columns = col_meta["SeqId"]
+    col_meta = pd.DataFrame(col_meta)
+    return vals, row_meta, col_meta

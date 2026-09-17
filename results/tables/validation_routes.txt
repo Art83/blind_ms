@@ -1,0 +1,339 @@
+Validation: what experiment could confirm each protein, with the sequences it needs
+
+[panel] proteins 11,276
+confirmable         7,928  route: shotgun MS replication
+chemistry_limited   1,925  route: targeted MS (PRM/SRM) on listed unique peptides
+inference_limited   1,282  route: targeted MS on listed peptides, or affinity replication
+inference_locked      113  route: alternative protease + targeted MS if listed, else affinity/immunoassay only   [in silico: 10 gain >=2 clean unique peptides under an alternative protease, 103 affinity-only]
+unscored               28  route: not scored (no reviewed sequence)
+
+[nominated] proteins 535
+confirmable           368  route: shotgun MS replication
+chemistry_limited      69  route: targeted MS (PRM/SRM) on listed unique peptides
+inference_limited      84  route: targeted MS on listed peptides, or affinity replication
+inference_locked        8  route: alternative protease + targeted MS if listed, else affinity/immunoassay only   [in silico: 0 gain >=2 clean unique peptides under an alternative protease, 8 affinity-only]
+unscored                6  route: not scored (no reviewed sequence)
+
+nominated proteins in the not-confirmable classes, with their route and peptides:
+A1BG       plasma ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: GVTFLLR;SSTSPDR;LLELTGPK;ATWSGAVLAGR;HQFLLTGDTQGR
+AGER       plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: TAPIQPR;IGEPLVLK;APENQEEEEER;VLSPQGGGPWDSVAR;VYQIPGKPEIVDSASELTAGVPNK
+APLNR      cortex ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: YLAIVRPVANAR;SIPYSQETLVVD;SADIFIASLAVADLTFVVTLPLWATYTYR
+APOD       plasma both          chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: VLNQELR;IPTTFENGR;NILTSNNIDVK;NPNLPPETVDSLK
+BRINP3     cortex ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: VNNLAVER;QPLISLPR;TSTYWLTR;LSTSEVVR;SQEYTDFVDR
+C1QB|C1R|C1QA|C1QC|C1S plasma ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: GESGDYK;IAFSATR;TINVPLR;GDPGIPGNPGK;GGPGAPGAPGPK
+C1QC       plasma ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: FQSVFTVTR;DGYDGLPGPK;GEPGLPGHPGK;GEPGIPAIPGIR;TNQVNSGGVLLR
+C4BPA      plasma ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: NGQVEIK;IAHGHYK;KPELVNGR;TWYPEVPK;QSSSYSFFK
+CAMK2B     csf    affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: ITAHEALK;NSAAATSPK;VPDILSSVR;ISDILNSVR;ISDILNSVR
+CD200      plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: GELSQGVQK;EQLYTPASLK;GYWFSVPLLLSIVSLVILLVLISILLYWK
+CD55       plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: LNSASLK;EPSLSPK;HFHETTPNK;TTTPNAQATR;TSFPEDTVITYK
+CD74       plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: RPGAPESK;GSFPENLR;LPKPPKPVSK;HSLEQKPTDAPPK;LTVTSQNLQLENLR
+CD86       plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: FDSVHSK;LHNLQIK;EESEQTK;TSFDSDSWTLR
+CDCP1      plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: TFIWDVK;IDATVVR;LATEEPPPR;IYVVDLSNER;LSLVLVPAQK
+CHRDL1     plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: TTLSQWK;TELEDLVK;SHYDPPPSR;ELPGQSFDNK;GILQHFHIEK
+CRISPLD2   plasma ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: TYVGSLR;GGLVDITR;HGVQSLSK;AAIHYGILDDK;NGVQSESLGTPR
+CST7       plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: VKPGFPK;ALVQIVK;TNDPGVLQAAR
+CTF1       plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: QAELNPR;QTHSLAHLLTK;TEGDLGQLLPGGSA;ALGAAVEALLAALGAANR;AEPPAATASAASATGVFPAK
+DTX3       csf    affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: AGPPPLR;AAPLLPPGAR;DATLLLPSYEK;VTVSKPVWDFLSK;FYGQLVGNQPQNGR
+ECM1       plasma ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: HPPSPTR;SQGGWGHR;AWEDTLDK;APYPNYDR;DILTIDIGR
+F12        plasma ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: TEQAAVAR;EQPPSLTR;TPPQSQTPGALPAK
+FBLN5      plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: IYVSQYPF;DQPFTILYR;YPGAYYIFQIK
+FGFBP3     plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: QVLGGLR;GHGAELR;ASGPAAGTPPPQSAPPK;ASPPARPTVAGFAGESKPR;GAASNVAEPVPGPTGGSSGR
+FLT3LG     plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: VNTEIHFVTK;LLQETSEQLVALKPWITR;TPRPGEQVPPVPSPQDLLLVEH
+FRZB       plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: NNYNYVIR;SSLVNIPR;LLLVEGSIAEK;SDSSNSDSTQSQK
+GAPDHS     plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: YDSTHGR;TVDGPSR;APPPPEPK;ELTVGINGFGR;LAQPAPYSAIK
+GDF2       plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: LSPISVLYK;HAIVQTLVHLK;VNFEDIGWDSWIIAPK
+GFRA2      csf    ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: EISPTER;VPSEYTYR;GPSFQATQAPR;LASIFSGTGADPVVSAK
+GHR        plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: GIDPDLLK;TEESDTDR;LLSSDHEK;SHSNLGVK;NTQEWTQEWK
+GLI2       plasma other_only    chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: LALLDAPER;RPDALSLPR;LPSPGLHGQR;SGAPSQGIPR;AVQQQLAYAR
+GLTPD2     plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: VTDLEAR;TLLLLHR;TQSLLAER;LAFLAFPGR;QESGTLEAPER
+GP1BB      plasma ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: AWLAGRPER;TAHLGANPWR;LLPYLAEDELR;LSLTDPLVAER
+GPNMB      csf    ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: DPASPLR;GLSVFLNR;AYVPIAQVK;AVFFPGNQEK;EDANGNIVYEK
+GPT        cortex ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: GHFIAAR;VLGPIHER;SLSFLGTFILK
+GRN        plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: WPTTLSR;ASLSHPR;SPHVGVK;LPAHTVGDVK;GSEIVAGLEK
+HAVCR1     plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: LLGDLSR;ALQNAVEK;ITVSLEIVPPK;EVQQLSVSFSSLQIK;VTTTPIVTTVPTVTTVR
+HGF        plasma other_only    chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: NTIHEFK;GTVSITK;WDHQTPHR;HIFWEPDASK;EFGHEFDLYENK
+ICAM1      plasma other_only    chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: ATPEDNGR;STQGEVTR;ELLLPGNNR;VTVNVLSPR;LLGIETPLPK
+IGHM|JCHAIN|IGL|IGK plasma ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: QNGEAVK;VQHPNGNK;QIQVSWLR;GQPLSPEK
+IL17C      plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: VDTDEDR;ETAALNSVR;LLQSLLVLR;WGQALPVALVSSLEAASHR
+IL3        plasma other_only    chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: DGDWNEFR;RPNLEAFNR;TLENAQAQQTTLSLAIF
+IL34       csf    unclassified  chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: HYFPINYK;AQGEGLLP;ISVPYEGVFR;VESVLSLLNAPGPNLK;YLQEVETLLLNVQQGLTDVEVSPK
+IL6R       plasma other_only    chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: STPSLTTK;DDDNILFR;KPAAGSHPSR;SPYDISNTDYFFPR
+LILRB1     csf    unclassified  chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: STYQSQK;EGAADDPWR;GQFPIPSITWEHAGR;SPHDEDPQAVTYAEVK;EATEPPPSQEGPSPAVPSIYATLAIH
+LINGO3     plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: LLWIVQR;TLNFDGR;LIPPGVFTR;VTATAGEDVR;LTAVPDGIPAETR
+LRRC25     plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: LEVLNVLR;VDGALAAR;ELPVTFFAHLQK;ASNVILLDLSGNGLR;ELNKPWAAQDGPKPGLGLQPR
+MTFR1L     cortex ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: SDTRPLR;QSQDLNR;KPALPALSR;TTELQDELSHLR;EEDPAVLISEVLR
+NPNT       cortex ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: GDVFIPR;LVLPLGR;NGGHGWR;QTQITLR;VQTDPQKPR
+NTN1       csf    ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: GDQSLWIR;SSLVIQWR;DYAVQIHILK;FTVNIISVYK;DSYFYAVSDLQVGGR
+NTN3       cortex ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: GPGLIAAR;GSLVLPWR;AFELVFVSLR;FPVAVLAVFR;DYAVQVAVGAR
+PCOLCE     plasma ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: EGQGPGPK;GFLLWYSGR;YDALEVFAGSGTSGQR;YDSVSVFNGAVSDDSR;TGGLDLPSPPTGASLK
+PLSCR3     csf    ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: LADPGDR;QWGGLVR;FSIQDADR;GGAGPSAVTS;EALTDADDFGLQFPLDLDVR
+PRND       csf    ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: LHQQVLWR;LDIDFGAEGNR;ALPSTAQITEAQVAENRPGAFIK
+PVR        csf    ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: LEFVAAR;SVDIWLR;QAELTVQVK;EGPPSEHSGISR;VLAKPQNTAEVQK
+S1PR5      cortex ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: YQPGAGLR;GPAPVSSR;LSPALWFAR;TLVSEPAAD;LPARPGTAGTTSTR
+SELENOP    plasma ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: QGHPENR;QPPAWSIR;DDFLIYDR;VSLATVDK;LPTDSELAPR
+SIGLEC9    cortex ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: AVWEETR;FHLLGDPHTK;GQEATDTEYSEIK;EGANTDQDAPVATNNPAR;SARPAAGVGDTGIEDANAVR
+SLCO5A1    plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: VGHPDNAR;EFPLSTVSER;NPVHLDQNDPR;QVITPPTVGQR;FVYFGLAAGLK
+SMAD5      csf    affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: ALSSPGQPSK;DVQPVAYEEPK;HNEFNPQHSLLVQFR;IFNNQEFAQLLAQSVNHGFEAVYELTK
+SMOC1      plasma both          chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: AQALEQAK;VISLPELK;DPTLGVVHR;TTEADDPFK;QSALEEAQQNPR
+SMOC2      csf    ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: YTQEQAR;VVHWYFK;FSALTFLR;DPQLEIAYR;GHAESTSNR
+SNRPA      cortex ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: TDSDIIAK;SQETPATK;EVSSATNALR;HDIAFVEFDNEVQAGAAR;SLYAIFSQFGQILDILVSR
+ST8SIA5    csf    ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: HEILEVK;QSELFDR;NTPLGTK;NTDVSIR;YADPSANR
+STC1       plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: SFLYSAAK;GEEDSPSHIK;VAAQNSAEVVR;NPEAITEVVQLPNHFSNR
+TMEM214    cortex ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: SLEEALK;IATANLGK;SHQSRPAK;LTNQELLR;ALDVADLQK
+TNFRSF11B  plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: TVTQSLK;VNAESVER;VGAEDIEK;NGDQDTLK;QHSSQEQTFQLLK
+TREM2      plasma affinity_only chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: VLVEVLADPLDHR;VVSTHNLWLLSFLR;DAGDLWFPGESESFEDAHVEHSISR
+TRMT2A     csf    ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: FGLQPHK;GRPLSVR;EIGSTNR;AFQEFIR;LELQNVPR
+ZNF587B    plasma ms_only       chemistry_limited  targeted MS (PRM/SRM) on listed unique peptides
+peptides: TSLGNIVK;TPVTGVSPK;YFSLEGYLR;SFSSNVNLK;KPSLSYHQR
+AGRP       plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: FFNAFCYCR;LGTAMNPCSR;LHESCLGQQVPCCDPCATCYCR
+AMBP       plasma ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: ETLLQDFR;HHGPTITAK
+APOF       plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: SYDLDPGAGSLEI;SGVQQLIQYYQDQK
+APOH       plasma ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: ATVVYQGER;EHSSLAFWK
+BGLAP      plasma ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: YLYQWLGAPVPYPDPLEPR
+BMP7       csf    ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: MANVAENSSSDQR
+CALCA      plasma other_only    inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: NNFVPTNVGSK
+CAMP       plasma ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: FALLGDFFR
+CCL11      plasma other_only    inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: DICADPK;WVQDSMK
+CCL18      plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: QICADPNK;ELCCLVYTSWQIPQK;FIVDYSETSPQCPKPGVILLTK
+CCL20      plasma other_only    inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: FIVGFTR
+CCL22      plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: EICADPR;HFYWTSDSCPRPGVVLLTFR
+CCL25      plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: FSNPISSSK;LHHNTQTFQAGPHAVK
+CCL26      plasma other_only    inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: AVIFTTK
+CCL3       plasma other_only    inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: QIPQNFIADYFETSSQCSKPGVIFLTK
+CD40       plasma other_only    inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: ALVVIPIIFGILFAILLVLVFIK
+CGA        plasma other_only    inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: AYPTPLR
+CHCHD7     csf    affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: MPSVTQR;CSTYFLR;AVGNMPY;CLDENNYDR;FWNSIVMQR
+CISD1      plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: HNEETGDNVGPLIIK;VEWIAAVTIAAGTAAIGYLAYK
+CNN1       plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: EWIEGVTGR;GPAYGLSAEVK
+CPLX1      plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: MLGGDEEK;YLPGPLQDMLK;EAEAQAAMEANSEGSLTRPK;AIPPGCGDEVEEEDESILDTVIK
+CPLX2      plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: MLGGEEEK;YLPGPLQDMFK;AALEQPCEGSLTRPK;AIPAGCGDEEEEEEESILDTVLK
+CRIP1      plasma ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: EVYFAER;GGAESHTFK
+CSF3       plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: IQGDGAALQEK;AGGVLVASHLQSFLEVSYR
+CST3       plasma ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: ALDFAVGEYNK;QIVAGVNYFLDVELGR
+CST5       plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: ISILNYK;TLAGGIHATDLNDK
+CXCL12     plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: FFESHVAR;WIQEYLEK
+CXCL5      csf    affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: ILDGGNK
+CXCL8      plasma other_only    inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: TYSKPFHPK
+FAHD2A     plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: SEVTFLAPVTRPDK
+FOLR2      csf    ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: TKPGPEDK;GWDWTSGVNK
+FSHB|CGA   plasma other_only    inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: ELVYETVR
+GABARAPL1  plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: EDHPFEYR
+GAS1       plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: GDLPYGPGR
+GDF15      plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: ASLEDLGWADWVLSPR;TDTGVSLQTYDDLLAK
+GNB3       cortex ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: VGILSGHDNR;LIVWDSYTTNK
+HAMP       csf    affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: DTHFPICIFCCGCCHR
+IGHG3      plasma ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: WYVDGVEVHNAK
+IGKV3D-15  csf    ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: LLIYGASIR
+IGLV4-69   plasma ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: LNSDGSHSK;FSGSSSGAER
+IL15       csf    ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: ECEELEEK;EFLQSFVHIVQMFINTS;IEDLIQSMHIDATLYTESDVHPSCK
+KCNE5      plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: LLLELHHR;QLASEGLPALAQGAER
+KITLG      plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: LVANLPK;LFTPEEFFR
+KLK11      plasma other_only    inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: KPGVYTK;YIVHLGQHNLQK
+LAPTM4A    cortex ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: EPPPPYLPA;EYLDQLPDFPYK
+LECT2      csf    ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: NAINNGVR;LGTLLPLQK
+LIN7A      csf    affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: IIPGGVAER;LQESGEVPVHK
+LTA        plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: QNSLLWR;ATSSPLYLAHEVQLFSSQYPFHVPLLSSQK
+LY6H       csf    ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: ITDPSSSR
+LYNX1      csf    ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: TYYTPTR
+MAP1LC3A   csf    affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: MPSDRPFK;FLVPDHVNMSELVK
+MDK        cortex ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: DCGVGFR;EFGADCK;VTKPCTPK;EGTCGAQTQR;YNAQCQETIR
+MIF        csf    ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: IGGAQNR
+NDP        cortex ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: SEPLVSFSTVLK;HHYVDSISHPLYK
+NPPB       plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: EVATEGIR;LSELQVEQTSLEPLQESPRPTGVWK
+NRGN       csf    ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: GGAGGGPSGD;GPGPGGPGGAGVAR
+OPALIN     csf    ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: GLWWLVPR;TVAGSEEPVHDR
+ORM2       plasma ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: EHVAHLLFLR;NWGLSFYADKPETTK
+PDGFB|PDGFA plasma other_only    inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: TEVFEISR
+PDYN       cortex ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: SQEDPNAYSGELFDA
+PGAM1      csf    ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: HGESAWNLENR;FSGWYDADLSPAGHEEAK
+PGF        plasma other_only    inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: ADAPSFLPPR;SGDRPSYVELTFSQHVR
+PI3        plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: DTDCPGIK;CAMLNPPNR;CCEGSCGMACFVPQ;GPVSTKPGSCPIILIR
+PPP1R14A   cortex ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: GPGGSPGGLQK;QPSPSHDGSLSPLQDR
+PPY        plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: EDTLAFSEWGSPHAAVPR
+PTN        plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: LTKPKPQAESK
+PYY        plasma other_only    inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: HYLNLVTR;EDASPEELNR
+RBP4       plasma ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: YWGVASFLQK;DPNGLPPEAQK
+REG3A      plasma ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: RPSGNLVSVLSGAEGSFVSSLVK
+RETN       cortex ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: IQEVAGSLIFR
+RNASE1     csf    ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: YPNCAYR;NGQGNCYK;SNSSMHITDCR;QHMDSDSSPSSSSTYCNQMMR;CKPVNTFVHEPLVDVQNVCFQEK
+RPS12      plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: DVIEEYFK;TALIHDGLAR
+SAA2       plasma ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: GAEDSLADQAANK;GPGGAWAAEVISNAR
+SBSPON     csf    ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: DPACFAR;FTGDCCFDYDR;VYGTCFCDQACR;VDQCSCPAVHSFIFI;TESLTPHCALENWPLTR
+SFRP1      plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: SQYLLTAIHK;QQASSWVPLLNK
+SLC66A1L   plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: SQLFVAYR
+SNRPB      cortex ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: VPLAGAAGGPGIGR;GTVAAAAAAATASIAGAPTQYPPGR
+SNRPD3     cortex ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: NQGSGAGR;VAQLEQVYIR
+SRGN       csf    ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: GPMFELLPGESNK;CNPDSNSANCLEEK;NLPSDSQDLGQHGLEEDFML
+TAFA5      plasma other_only    inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: GQIAGTTR
+TFF3       plasma affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: GCCFDSR;VDCGYPHVTPK;IPGVPWCFKPLQEAECTF
+TUBB2B     csf    ms_only       inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: INVYYNEATGNK
+UBE2N|UBE2V1 csf    affinity_only inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: YFHVVIAGPQDSPFEGGTFK;TVLLSIQALLSAPNPDDPLANDVAEQWK
+VEGFC      csf    both          inference_limited  targeted MS on listed peptides, or affinity replication
+peptides: SIDNEWR;QVHSIIR
+C4A        plasma ms_only       inference_locked   affinity or immunoassay only (no unique peptide under any listed protease)
+no unique peptideshared with C4B
+C4B|C4A    csf    ms_only       inference_locked   affinity or immunoassay only (no unique peptide under any listed protease)
+no unique peptideshared with C4A
+CCL4       plasma other_only    inference_locked   affinity or immunoassay only (no unique peptide under any listed protease)
+no unique peptideshared with CCL4L1
+H2AW       plasma affinity_only inference_locked   affinity or immunoassay only (no unique peptide under any listed protease)
+no unique peptideshared with H2AC1;H2AC11;H2AC12;H2AC14;H2AC18;H2AC20;H2AC21;H2AC4
+HSPA1B     plasma affinity_only inference_locked   affinity or immunoassay only (no unique peptide under any listed protease)
+no unique peptideshared with HSPA1A;HSPA1L;HSPA2;HSPA5;HSPA6;HSPA7;HSPA8
+MMP9       plasma affinity_only inference_locked   affinity or immunoassay only (no unique peptide under any listed protease)
+no unique peptide
+P0DMV8     plasma affinity_only inference_locked   affinity or immunoassay only (no unique peptide under any listed protease)
+no unique peptideshared with HSPA1B;HSPA1L;HSPA2;HSPA5;HSPA6;HSPA7;HSPA8
+UBC        cortex ms_only       inference_locked   affinity or immunoassay only (no unique peptide under any listed protease)
+no unique peptideshared with RPS27A;UBA52;UBB

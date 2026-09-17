@@ -1,0 +1,41 @@
+affinity audit: could MS confirm what the panel reports?
+
+classes: inference_locked = no unique tryptic peptide; inference_limited = < 3 unique clean
+peptides; chemistry_limited = sequence-only P(detect) < 0.686 (PE1 25th percentile); else confirmable.
+
+[Olink] targets 5,416, distinct UniProt 5,416, multi-target features 0, in the GTEx-labelled universe 3,853
+   confirmable         3,957 (73.1%)   druggable 1,169, approved-drug 838   organoid lysate MS-confirmed 73.2% (n=2,952)   media 10.5% (n=2,057)
+                             biofluid MS-confirmed (all batches): csf neat 23.5% (n=1,841)   csf depleted 31.7% (n=1,841)   plasma neat  6.8% (n=1,841)   plasma depleted 14.7% (n=1,841)
+   chemistry_limited     854 (15.8%)   druggable 262, approved-drug 177   organoid lysate MS-confirmed 40.5% (n=523)   media  3.3% (n=331)
+                             biofluid MS-confirmed (all batches): csf neat 15.5% (n=341)   csf depleted 23.8% (n=341)   plasma neat  4.7% (n=341)   plasma depleted  8.5% (n=341)
+   inference_limited     547 (10.1%)   druggable 213, approved-drug 144   organoid lysate MS-confirmed 38.3% (n=339)   media  5.6% (n=252)
+                             biofluid MS-confirmed (all batches): csf neat 14.8% (n=283)   csf depleted 24.7% (n=283)   plasma neat  3.9% (n=283)   plasma depleted  8.8% (n=283)
+   inference_locked       37 ( 0.7%)   druggable 12, approved-drug 5
+   unscored               21 ( 0.4%)   druggable 0, approved-drug 0
+   by whole-body abundance tier: not-confirmable share (chemistry + inference)
+     high            n= 1,465  not confirmable 17.1%
+     mid             n= 1,463  not confirmable 18.8%
+     low             n= 1,467  not confirmable 35.7%
+     no PaxDb value  n= 1,021  not confirmable 38.1%
+   secreted / signal peptide  n= 1,292  not confirmable 36.9%
+   intracellular              n= 4,124  not confirmable 23.3%
+
+[SomaScan] targets 10,776, distinct UniProt 9,580, multi-target features 102, in the GTEx-labelled universe 7,640
+   confirmable         7,388 (68.6%)   druggable 2,461, approved-drug 1,779   organoid lysate MS-confirmed 72.2% (n=6,344)   media 10.6% (n=4,897)
+                             biofluid MS-confirmed (all batches): csf neat 20.9% (n=4,488)   csf depleted 28.7% (n=4,488)   plasma neat  6.6% (n=4,488)   plasma depleted 13.6% (n=4,488)
+   chemistry_limited   1,882 (17.5%)   druggable 545, approved-drug 343   organoid lysate MS-confirmed 38.7% (n=1,389)   media  2.2% (n=935)
+                             biofluid MS-confirmed (all batches): csf neat 12.0% (n=897)   csf depleted 17.3% (n=897)   plasma neat  3.5% (n=897)   plasma depleted  6.4% (n=897)
+   inference_limited   1,357 (12.6%)   druggable 449, approved-drug 306   organoid lysate MS-confirmed 40.9% (n=953)   media  8.6% (n=675)
+                             biofluid MS-confirmed (all batches): csf neat 15.2% (n=731)   csf depleted 21.1% (n=731)   plasma neat  4.0% (n=731)   plasma depleted  8.8% (n=731)
+   inference_locked      140 ( 1.3%)   druggable 25, approved-drug 12   organoid lysate MS-confirmed 29.8% (n=104)   media 25.0% (n=84)
+                             biofluid MS-confirmed (all batches): csf neat 15.1% (n=73)   csf depleted 21.9% (n=73)   plasma neat  6.8% (n=73)   plasma depleted 17.8% (n=73)
+   unscored                9 ( 0.1%)   druggable 2, approved-drug 2
+   by whole-body abundance tier: not-confirmable share (chemistry + inference)
+     high            n= 2,894  not confirmable 18.3%
+     mid             n= 2,897  not confirmable 21.2%
+     low             n= 2,897  not confirmable 43.8%
+     no PaxDb value  n= 2,088  not confirmable 46.3%
+   secreted / signal peptide  n= 2,691  not confirmable 38.7%
+   intracellular              n= 8,085  not confirmable 28.9%
+
+targets on both panels: 3,720   class agreement 100.0% (same protein, same class by construction unless the two panels map different accessions)

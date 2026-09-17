@@ -194,6 +194,7 @@ def compare(col, label):
     print(f"{label:16s} rescued {a.median():8.2f} (n={len(a)}) | "
           f"non-rescued {b.median():8.2f} (n={len(b)}) | p={p:.3g}")
 
+
 print("\nrescued vs non-rescued within the trypsin-limited set:")
 compare("log_abundance_peak", "abundance(peak)")
 compare("log_abundance_med", "abundance(med)")

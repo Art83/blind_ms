@@ -1,0 +1,32 @@
+Nominated Biomarkers: are the proteins the literature nominated from affinity data MS-confirmable?
+
+classes as in panel_audit.py (chemistry-limited threshold 0.686). Not-confirmable = chemistry + inference classes.
+
+panel background, not-confirmable share: SomaScan 31.4% (3,379/10,767)  Olink 26.7% (1,438/5,395)
+
+plasma nominated proteins 301
+   affinity_only  n= 152  not confirmable 37.5%   confirmable 95  chemistry limited 26  inference limited 27  inference locked 4
+   both           n=  13  not confirmable 15.4%   confirmable 11  chemistry limited 2
+   ms_only        n=  90  not confirmable 27.8%   confirmable 65  chemistry limited 12  inference limited 12  inference locked 1
+   other_only     n=  43  not confirmable 46.5%   confirmable 23  chemistry limited 5  inference limited 14  inference locked 1
+   SomaScan-nominated, affinity-only (n=115): not confirmable 40.0% vs SomaScan panel 31.4%   OR 1.46  p=5.48e-02
+   Olink-nominated, affinity-only (n=45): not confirmable 31.1% vs Olink panel 26.7%   OR 1.24  p=5.00e-01
+   affinity-only vs MS-only nominees: 37.5% vs 27.8%   OR 1.56  p=1.60e-01
+   affinity-only nominees measured by affinity in organoid lysate: 128, MS-confirmed there 57.0%  (confirmable class 65.0%, not-confirmable classes 43.8%)
+
+csf nominated proteins 180
+   affinity_only  n=  46  not confirmable 26.1%   confirmable 34  chemistry limited 4  inference limited 8
+   both           n=  20  not confirmable 10.0%   confirmable 18  chemistry limited 1  inference limited 1
+   ms_only        n= 107  not confirmable 28.0%   confirmable 77  chemistry limited 10  inference limited 19  inference locked 1
+   other_only     n=   5  not confirmable 40.0%   confirmable 3  inference limited 2
+   SomaScan-nominated, affinity-only (n=37): not confirmable 24.3% vs SomaScan panel 31.4%   OR 0.70  p=4.78e-01
+   Olink-nominated, affinity-only (n=10): not confirmable 30.0% vs Olink panel 26.7%   OR 1.18  p=7.32e-01
+   affinity-only vs MS-only nominees: 26.1% vs 28.0%   OR 0.91  p=8.46e-01
+   affinity-only nominees measured by affinity in organoid lysate: 43, MS-confirmed there 72.1%  (confirmable class 75.0%, not-confirmable classes 63.6%)
+
+cortex nominated proteins 121
+   ms_only        n= 121  not confirmable 24.0%   confirmable 92  chemistry limited 16  inference limited 10  inference locked 3
+
+affinity-only nominees in the not-confirmable classes (69), by fluid:
+   csf: CAMK2B (chemistry, approved drug, organoid MS yes); DTX3 (chemistry, organoid MS yes); HGF (chemistry, approved drug, organoid MS no); SMAD5 (chemistry, organoid MS yes); CCL25 (inference, druggable, organoid MS no); CHCHD7 (inference, organoid MS no); CXCL5 (inference, druggable, organoid MS no); GDF15 (inference, approved drug, organoid MS yes); HAMP (inference, druggable); LIN7A (inference, organoid MS yes); MAP1LC3A (inference, organoid MS yes); UBE2N (inference, approved drug, organoid MS yes)
+   plasma: AGER (chemistry, approved drug, organoid MS no); CD200 (chemistry, druggable, organoid MS yes); CD55 (chemistry, approved drug, organoid MS yes); CD74 (chemistry, druggable, organoid MS yes); CD86 (chemistry, approved drug, organoid MS no); CDCP1 (chemistry, organoid MS no); CHRDL1 (chemistry, organoid MS yes); CST7 (chemistry, organoid MS no); CTF1 (chemistry, druggable, organoid MS no); FBLN5 (chemistry, organoid MS yes); FGFBP3 (chemistry, organoid MS yes); FLT3LG (chemistry); FRZB (chemistry, druggable); GAPDHS (chemistry, organoid MS no); GDF2 (chemistry, approved drug, organoid MS no); GHR (chemistry, approved drug, organoid MS no); GLTPD2 (chemistry, organoid MS no); GRN (chemistry, druggable, organoid MS yes); HAVCR1 (chemistry, organoid MS no); IL17C (chemistry, druggable, organoid MS no); LINGO3 (chemistry, organoid MS no); LRRC25 (chemistry, organoid MS no); SLCO5A1 (chemistry, organoid MS no); STC1 (chemistry, organoid MS yes); TNFRSF11B (chemistry, approved drug, organoid MS no); TREM2 (chemistry, organoid MS no); AGRP (inference, druggable, organoid MS no); APOF (inference, approved drug); CCL18 (inference, approved drug); CCL22 (inference, druggable); CCL25 (inference, druggable, organoid MS no); CISD1 (inference, organoid MS yes); CNN1 (inference, druggable, organoid MS yes); CPLX1 (inference, organoid MS yes); CPLX2 (inference, organoid MS yes); CSF3 (inference, approved drug); CST5 (inference, druggable, organoid MS no); CXCL12 (inference, approved drug, organoid MS yes); FAHD2A (inference, organoid MS yes); GABARAPL1 (inference, organoid MS yes); GAS1 (inference, approved drug, organoid MS yes); GDF15 (inference, approved drug, organoid MS yes); KCNE5 (inference); KITLG (inference, organoid MS no); LTA (inference, approved drug, organoid MS no); NPPB (inference); PI3 (inference, approved drug, organoid MS no); PPY (inference, approved drug, organoid MS no); PTN (inference, organoid MS yes); RPS12 (inference, approved drug, organoid MS yes); SFRP1 (inference, organoid MS yes); SLC66A1LP (inference); TFF3 (inference, approved drug, organoid MS no); H2AC25 (inference-locked, approved drug, organoid MS no); HSPA1A (inference-locked, approved drug, organoid MS yes); HSPA1B (inference-locked, druggable, organoid MS no); MMP9 (inference-locked, approved drug, organoid MS no)

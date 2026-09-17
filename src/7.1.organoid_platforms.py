@@ -20,7 +20,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from config import DATA_DIR, TAB_DIR
-from utils_validation import build_resolver
+from utils_validation import build_resolver, read_adat
 
 ORG = DATA_DIR / "organoids"
 SOMA = {
@@ -41,28 +41,6 @@ ARMS = ("Organoid", "Media")
 
 
 # --- Helpers---
-def read_adat(path):
-    with open(path, encoding="utf-8", errors="replace") as fh:
-        lines = [l.rstrip("\r\n") for l in fh]
-    tb = next(i for i, l in enumerate(lines) if l.startswith("^TABLE_BEGIN"))
-    rows = [l.split("\t") for l in lines[tb + 1:] if l != ""]
-    col_meta = {}
-    i = 0
-    while rows[i][0] == "":
-        r = rows[i]
-        k = next(j for j, c in enumerate(r) if c != "")
-        col_meta[r[k]] = r[k + 1:]
-        i += 1
-    n_rowmeta = k
-    header = rows[i][:n_rowmeta]
-    data = rows[i + 1:]
-    row_meta = pd.DataFrame([r[:n_rowmeta] for r in data], columns=header)
-    vals = pd.DataFrame([r[n_rowmeta + 1:] for r in data]).apply(pd.to_numeric, errors="coerce")
-    vals.columns = col_meta["SeqId"]
-    col_meta = pd.DataFrame(col_meta)
-    return vals, row_meta, col_meta
-
-
 def meta_affinity(company):
     gm = pd.read_csv(GEN_META, dtype=str)
     gm = gm[gm["Company"].str.lower() == company.lower()]
