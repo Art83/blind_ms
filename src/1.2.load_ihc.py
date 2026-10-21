@@ -1,9 +1,8 @@
 """
-Load HPA IHC into cell type resolved tables and make the
+Loading HPA IHC into cell type resolved tables and making the
 master ENSG<->symbol dictionary (HPA has the broadest gene coverage, so it's better if PaxDb
 maps through it rather than through gtex).
 """
-from __future__ import annotations
 import pandas as pd
 from config import IHC_FILE, TAB_DIR
 from utils import load_ihc

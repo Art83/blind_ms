@@ -217,24 +217,46 @@ def build_grid(out):
     return grid[cols], tri
 
 
-def _qc(grid) -> str:
-    L = [f"grid rows: {len(grid):,}  "
-         f"({grid['ensg'].nunique():,} genes x {grid['tissue'].nunique()} tissues)", "",
+def _qc(grid, tri):
+    L = [f"grid rows: {len(grid):,}  ({grid['ensg'].nunique():,} genes x {grid['tissue'].nunique()} tissues)", "",
          "ihc_status:", grid["ihc_status"].value_counts(dropna=False).to_string(), "", "gtex_status:",
          grid["gtex_status"].value_counts(dropna=False).to_string(), "", "agreement_class (tri-source tissues only):",
          grid["agreement_class"].value_counts(dropna=False).to_string(), "",
          f"ms_dark_candidates: {int(grid['ms_dark_candidate'].sum()):,}"]
     md = grid[grid["ms_dark_candidate"]]
-    L.append("by gtex_status:")
+    L.append("  by gtex_status:")
     L.append("  " + md["gtex_status"].value_counts().to_string().replace("\n", "\n  "))
     L.append("")
-    # PaxDb abundance coverage among IHC-present grid rows
+    # THE number: PaxDb abundance coverage among IHC-present grid rows
     ihc_pos = grid[grid["ihc_status"] == "present"]
     cov_tissue = ihc_pos["paxdb_ppm"].notna().mean() if len(ihc_pos) else float("nan")
     cov_any = (ihc_pos["paxdb_ppm"].notna() | ihc_pos["paxdb_ppm_global"].notna()).mean() if len(ihc_pos) else float("nan")
     L.append("PaxDb abundance coverage among IHC-present rows:")
     L.append(f"tissue-matched ppm: {cov_tissue:.1%}")
-    L.append(f"tissue or whole-body ppm: {cov_any:.1%}")
+    L.append(f"tissue OR whole-body ppm: {cov_any:.1%}   <- abundance-conditioning coverage")
+
+    # --- ten tri-source tissues only, pair- and gene-level (for manuscript ) ---
+    t = grid[grid["tissue"].isin(list(tri))]
+    p = t[t["ihc_status"] == "present"]
+    scored = t[t["ihc_status"].isin(["present", "absent"])]
+    L.append("")
+    L.append(f"ten tri-source tissues only ({t['tissue'].nunique()} tissues):")
+    L.append(f"  genes with a scored IHC call: {scored['ensg'].nunique():,}")
+    L.append(f"  IHC-present pairs: {len(p):,}   genes: {p['ensg'].nunique():,}")
+    L.append(f"  MS-dark pairs: {int(p['ms_dark_candidate'].sum()):,} "
+             f"({p['ms_dark_candidate'].mean():.1%} of IHC-present pairs)")
+    nm = p[p["gtex_status"] == "not_measured"]
+    ma = p[p["gtex_status"] == "measured_absent"]
+    L.append(f"  not_measured: {len(nm):,} pairs, {nm['ensg'].nunique():,} genes "
+             f"({nm['ensg'].nunique() / p['ensg'].nunique():.1%} of IHC-present genes)")
+    L.append(f"  measured_absent: {len(ma):,} pairs, {ma['ensg'].nunique():,} genes")
+    L.append("  best_reliability among IHC-present pairs:")
+    L.append("    " + p["best_reliability"].value_counts(normalize=True).round(3)
+             .to_string().replace("\n", "\n    "))
+    L.append(f"  abundance coverage among IHC-present pairs: "
+             f"tissue-matched {p['paxdb_ppm'].notna().mean():.1%}, "
+             f"whole-body {p['paxdb_ppm_global'].notna().mean():.1%}, "
+             f"either {(p['paxdb_ppm'].notna() | p['paxdb_ppm_global'].notna()).mean():.1%}")
     return "\n".join(L)
 
 

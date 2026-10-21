@@ -13,12 +13,11 @@ import numpy as np
 import pandas as pd
 from scipy.stats import fisher_exact
 
-from utils_validation import MIN_CLEAN, ORDER
+from utils_validation import ORDER, NOT_CONF, ms_class, class_sweep
 from config import DATA_DIR, TAB_DIR
 
 BIOMARKERS = DATA_DIR / "biomarkers.xlsx"
 DGIDB = DATA_DIR / "interactions.tsv"
-NOT_CONF = ["chemistry_limited", "inference_limited", "inference_locked"]
 AFF = ["SomaScan", "Olink PEA"]
 OTHER = ["Luminex xMAP", "NULISAseq", "ELISA-based protein array"]
 
@@ -52,11 +51,7 @@ def class_all(n, out):
     keep = [c for c in ("ensg", "is_secreted", "has_signal") if c in fp.columns]
     t = n.merge(cen, on="uniprot", how="left").merge(pep, on="uniprot", how="left").merge(fp[["uniprot"] + keep], on="uniprot", how="left")
 
-    hard = float(pa.loc[pa["pe"] == 1, "p_seq"].quantile(0.25))
-    cls = np.where(t["pep_n_unique"] == 0, "inference_locked",
-          np.where(t["pep_n_clean"] < MIN_CLEAN, "inference_limited",
-          np.where(t["p_seq"] < hard, "chemistry_limited", "confirmable")))
-    t["ms_class"] = np.where(t["p_seq"].isna(), "unscored", cls)
+    t["ms_class"], hard = ms_class(t, pa.loc[pa["pe"] == 1, "p_seq"])
     t["on_somascan"] = t["uniprot"].isin(pa.loc[pa["panel"] == "SomaScan", "uniprot"]).astype(int)
     t["on_olink"] = t["uniprot"].isin(pa.loc[pa["panel"] == "Olink", "uniprot"]).astype(int)
     og = out / "organoid_gene_table.tsv"
@@ -153,5 +148,9 @@ print(f"  nominated: {len(n):,} rows, groups {n['group'].value_counts().to_dict(
 t, pa, hard = class_all(n, TAB_DIR)
 t.to_csv(TAB_DIR / "nominated_audit.tsv", sep="\t", index=False)
 text, _ = summarise(t, pa, hard)
+sweep = []
+class_sweep({**{f"{p} panel": d for p, d in pa.groupby("panel")},
+             **{f"nominated {f}": d for f, d in t.groupby("fluid")}}, pa.loc[pa["pe"] == 1, "p_seq"], sweep)
+text += "\n" + "\n".join(sweep)
 (TAB_DIR / "nominated_audit.txt").write_text(text)
 print(text)

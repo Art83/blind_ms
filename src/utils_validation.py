@@ -6,11 +6,36 @@ import statsmodels.api as sm
 
 
 PEP_COLS = ["pep_n_unique", "pep_frac_shared", "pep_max_shared_genes", "pep_n_clean"]
-FEAT_COLS = ["uniprot", "tryptic_per_kda", "n_tryptic_7_30", "mol_weight_kDa", "n_tm",
-             "is_secreted", "has_signal", "is_membrane", "disorder_fraction_proxy"]
+FEAT_COLS = ["uniprot", "tryptic_per_kda", "n_tryptic_7_30", "mw_da", "n_tm",
+             "is_secreted", "has_signal", "is_membrane", "disorder_fraction_foldindex"]
 
 MIN_CLEAN = 3
+PCT_HARD = 25
 ORDER = ["confirmable", "chemistry_limited", "inference_limited", "inference_locked", "unscored"]
+NOT_CONF = ["chemistry_limited", "inference_limited", "inference_locked"]
+
+
+def ms_class(t, pe1_scores, min_clean=MIN_CLEAN, pct=PCT_HARD):
+    # chemistry cutoff = the pct-th percentile of the sequence-only score among PE1 proteins
+    hard = float(pd.Series(pe1_scores).quantile(pct / 100)) if len(pe1_scores) else np.nan
+    cls = np.where(t["pep_n_unique"] == 0, "inference_locked",
+          np.where(t["pep_n_clean"] < min_clean, "inference_limited",
+          np.where(t["p_seq"] < hard, "chemistry_limited", "confirmable")))
+    return np.where(t["p_seq"].isna(), "unscored", cls), hard
+
+
+def class_sweep(frames, pe1_scores, L):
+    # share of scored targets that are not confirmable, as the two stated thresholds move
+    L += ["", "sensitivity to the class thresholds, share not confirmable "
+              f"(main analysis: min clean {MIN_CLEAN}, PE1 percentile {PCT_HARD}):"]
+    for mc in (2, 3, 5):
+        for pct in (10, 25, 50):
+            parts = []
+            for lab, d in frames.items():
+                cls, _ = ms_class(d, pe1_scores, mc, pct)
+                scored = cls != "unscored"
+                parts.append(f"{lab} {np.isin(cls, NOT_CONF).sum() / max(scored.sum(), 1):.1%}")
+            L.append(f"  min clean {mc}, PE1 percentile {pct:2d}: " + "  ".join(parts))
 
 
 def z(x):

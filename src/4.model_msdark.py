@@ -9,8 +9,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from config import TAB_DIR, TISSUES, ABUNDANCE_SOURCE
-from utils_modeling import _zscore, fit, REL_ORD, feature_contrasts, _other_source, _swap_abundance
-
+from utils_modeling import fit, REL_ORD, feature_contrasts, _other_source, _swap_abundance
 
 
 grid = pd.read_csv(TAB_DIR / "grid.tsv", sep="\t")
@@ -46,14 +45,16 @@ m["log_mw"] = np.log10(m["mw_da"].clip(lower=1))
 m["log_tryptic"] = np.log10(m["n_tryptic_7_30"].clip(lower=1))
 m["gtex_detected"] = (m["gtex_status"] == "measured").astype(int)
 m["type"] = m["gtex_status"]
+n_frac_na = int(m["frac_pos_celltypes"].isna().sum())
 m["frac_pos_celltypes"] = m["frac_pos_celltypes"].fillna(1.0)
 
 # IHC reliability as an ordinal antibody-QC covariate
 m["reliability_ord"] = m["best_reliability"].map(REL_ORD)
+n_rel_na = int(m["reliability_ord"].isna().sum())
 m["reliability_ord"] = m["reliability_ord"].fillna(m["reliability_ord"].median())
 
 # feature columns carried into model_table
-gf_carry = ["disorder_fraction_proxy", "low_complexity_fraction",
+gf_carry = ["disorder_fraction_foldindex", "low_complexity_fraction",
             "n_glyco_motif_count", "charged_fraction", "proline_fraction",
             "is_membrane", "is_secreted", "is_nuclear", "n_compartments",
             "pest_score_max", "pest_fraction", "is_in_complex", "n_complexes",
@@ -74,6 +75,8 @@ summ = [f"model_table: {len(tbl):,} IHC-present tri-source observations "
         f"abundance covariate: {ABUNDANCE_SOURCE} PaxDb ppm "
         f"({(tbl['abundance_source'] == ABUNDANCE_SOURCE).mean():.1%} primary, rest fallback)",
         f"biophysics feature coverage: {feat_cov:.1%}",
+        f"imputed: frac_pos_celltypes missing in {n_frac_na:,} rows (set to 1.0), "
+        f"reliability missing in {n_rel_na:,} rows (set to the median)",
         f"outcome gtex_detected mean (=fraction MS-bright): {tbl['gtex_detected'].mean():.3f}",
         "by type:",
         tbl["type"].value_counts().to_string(),

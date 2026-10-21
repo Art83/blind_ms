@@ -8,15 +8,14 @@ That representation is blind to two things:
   - whether a peptide is unique to one gene
   - whether instrument can "see" each peptide
 """
-from __future__ import annotations
 import re
-from collections import defaultdict
+from collections import Counter, defaultdict
 import numpy as np
 import pandas as pd
 import uniprot_annot as UA
 from config import DATA_DIR, TAB_DIR
 from utils_features import WIN, MZ_WIN, PROTON, SEQUON, GRAVY_HYDROPHILIC, GRAVY_HYDROPHOBIC, _digest, _pep_mass, \
-    _slow_cleave, _gravy
+    _slow_cleave, _gravy, _mol_weight
 
 UNIPROT_TSV = DATA_DIR / "uniprot_human.tsv"
 
@@ -31,6 +30,14 @@ have_ptm = all(c in df.columns for c in ("Glycosylation", "Modified residue", "D
 print(f"mature-chain annotation {'present' if have_chain else 'absent: precursor digest'}, "
       f"PTM annotation {'present' if have_ptm else 'absent: no PTM flags'}")
 
+# provenance checks: evidence codes behind each PTM column, and our mass scale against UniProt's Mass column
+for col in ("Glycosylation", "Disulfide bond", "Lipidation", "Modified residue"):
+    eco = Counter(re.findall(r"ECO:\d+", " ".join(df[col])))
+    print(f"evidence codes, {col}: " + ", ".join(f"{k} {v:,}" for k, v in eco.most_common()))
+d = (seqs.map(_mol_weight) - pd.to_numeric(df["Mass"].str.replace(",", ""), errors="coerce")).abs()
+print(f"mass check, computed average mass vs UniProt Mass: median |diff| {d.median():.3f} Da, "
+      f"{int((d > 1).sum()):,} of {int(d.notna().sum()):,} entries differ by more than 1 Da")
+
 pep_genes = defaultdict(set)
 per_protein = []
 for i, (a, g, s) in enumerate(zip(acc, gene, seqs)):
@@ -41,19 +48,18 @@ for i, (a, g, s) in enumerate(zip(acc, gene, seqs)):
     for p, _, _ in allp:
         pep_genes[p.replace("I", "L")].add(g)
     peps = [(p, st, en) for p, st, en in allp if st + 1 >= m_start and en <= m_end]
-    per_protein.append((a, g, s, peps, sites, (m_start, m_end)))
+    per_protein.append((a, g, s, peps, sites, _mol_weight(s[m_start - 1:m_end]) / 1000.0))
 print(f"digested {len(per_protein):,} entries, {len(pep_genes):,} distinct peptides")
 
 # per-peptide flags and per-protein aggregates
 rows = []
-for a, g, s, peps, sites, (m_start, m_end) in per_protein:
+for a, g, s, peps, sites, kda in per_protein:
     n = len(peps)
     L = len(s)
     ptm_pos = sites["glyco"] | sites["lipid"]
     ss_pos = sites["disulfide"]
-    kda = _pep_mass(s) / 1000.0 if L else float("nan")
-    sites = [m.start() for m in re.finditer(r"[KR](?!P)", s)]
-    bounds = [0] + [i + 1 for i in sites] + [L]
+    cuts = [m.start() for m in re.finditer(r"[KR](?!P)", s)]
+    bounds = [0] + [i + 1 for i in cuts] + [L]
     max_gap = max((b - a_ for a_, b in zip(bounds[:-1], bounds[1:])), default=L)
     if n == 0:
         rows.append(dict(uniprot=a, pep_n_7_30=0, pep_n_unique=0, pep_frac_unique=np.nan,

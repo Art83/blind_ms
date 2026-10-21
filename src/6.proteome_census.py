@@ -13,7 +13,7 @@ from sklearn.metrics import roc_auc_score
 from scipy.stats import mannwhitneyu
 import pandas as pd
 import uniprot_annot as UA
-from utils_features import AA_MASS, _mol_weight, _tryptic_count, _pI, _gravy, _low_complexity_fraction, _boot_auc, _boot_diff, _oof_auc
+from utils_features import AA_MASS, _mol_weight, _tryptic_count, _pI, _gravy, sequence_composition, _boot_auc, _boot_diff, _oof_auc
 from config import DATA_DIR, TAB_DIR
 
 PE_FILE = DATA_DIR / "uniprot_human.tsv"
@@ -33,20 +33,14 @@ def gene_label(out):
 
 
 def seq_features(seq, m_start=1, m_end=None):
+    # same definitions as build_features in utils_features.py: chemistry on the mature chain,
+    # tryptic yield per kDa of mature chain, mw_da the precursor mass
     m_end = m_end or len(seq)
     mat = seq[m_start - 1:m_end] or seq
-    mw = _mol_weight(seq)
     nt = _tryptic_count(seq, start=m_start, end=m_end)
-    L = len(mat) or 1
-    return dict(length=len(seq), mw_da=mw, gravy=_gravy(mat), pI=_pI(mat),
-                n_tryptic_7_30=nt, tryptic_per_kda=nt / (mw / 1000.0) if mw else 0.0,
-                cysteine_fraction=mat.count("C") / L,
-                charged_fraction=sum(mat.count(a) for a in "DEKR") / L,
-                proline_fraction=mat.count("P") / L,
-                glycine_fraction=mat.count("G") / L,
-                aromatic_fraction=sum(mat.count(a) for a in "FYW") / L,
-                n_glyco_motif_count=len(re.findall(r"(?=N[^P][ST])", mat)),
-                low_complexity_fraction=_low_complexity_fraction(mat))
+    return dict(length=len(seq), mw_da=_mol_weight(seq), gravy=_gravy(mat), pI=_pI(mat),
+                n_tryptic_7_30=nt, tryptic_per_kda=nt / (_mol_weight(mat) / 1000.0),
+                **sequence_composition(mat))
 
 
 PE_MAP = {"Evidence at protein level": 1, "Evidence at transcript level": 2,
@@ -163,6 +157,8 @@ L += ["missing proteome (PE2-4; PE5 quarantined separately):",
       f"  median P(detect):  PE2-4 {miss['p_seq'].median():.3f}  vs  PE1 {pe1['p_seq'].median():.3f}",
       f"  fraction of PE2-4 below PE1's 25th-pctile detectability "
       f"(structurally hard): {hard:.1%}",
+      "  same fraction at other PE1 percentile cuts: " + ", ".join(
+          f"{p}th {(miss['p_seq'] < pe1['p_seq'].quantile(p / 100)).mean():.1%}" for p in (10, 25, 50)),
       f"  Mann-Whitney PE2-4 < PE1 (one-sided): p={pu:.2e}",
       f"  PE5 (uncertain, quarantined): n={int((pe['pe']==5).sum()):,}  "
       f"median P {pe.loc[pe['pe']==5,'p_seq'].median():.3f}"]
@@ -175,6 +171,7 @@ if have_pep:
         sh = sub["pep_frac_shared"] >= 0.5
         L.append(f"  {lab:6s} n={len(sub):6,}  zero unique peptides {z.mean():5.1%}   "
                  f">=50% peptides shared {sh.mean():5.1%}   "
+                 f"(>=25% {(sub['pep_frac_shared'] >= 0.25).mean():5.1%}, >=75% {(sub['pep_frac_shared'] >= 0.75).mean():5.1%})   "
                  f"median unique peptides {sub['pep_n_unique'].median():.0f}")
 
 both = pe[pe["pe"].isin([1, 2, 3, 4])].copy()

@@ -287,9 +287,11 @@ def t6_inference(g, L):
         d = g[(g["set"] == fl) & (g["aff_present"] == 1)].dropna(subset=["pep_n_unique"]).copy()
         d["zero_unique"] = (d["pep_n_unique"] == 0).astype(int)
         d["mostly_shared"] = (d["pep_frac_shared"] >= 0.5).astype(int)
+        d["shared_ge_25"] = (d["pep_frac_shared"] >= 0.25).astype(int)
+        d["shared_ge_75"] = (d["pep_frac_shared"] >= 0.75).astype(int)
         d["z_ab"] = d["aff_abund_z"]
         base = d["ms_present"].mean()
-        for flag in ("zero_unique", "mostly_shared"):
+        for flag in ("zero_unique", "mostly_shared", "shared_ge_25", "shared_ge_75"):
             s = d[d[flag] == 1]
             L.append(f"   {fl:16s} {flag:14s} n={len(s):4,}  MS-present {s['ms_present'].mean():.1%} (all affinity targets {base:.1%})")
             logit(d, "ms_present", [flag, "z_ab"], f"{flag:14s} + abundance", L)

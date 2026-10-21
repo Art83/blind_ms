@@ -22,7 +22,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 import pandas as pd
-from config import GROUPS, EXCLUDED, OBSERVED_PTM, HALF_LIFE_LEAK, TAB_DIR
+from config import GROUPS, EXCLUDED, OBSERVED_PTM, HALF_LIFE_LEAK, HEURISTIC, TAB_DIR
 from utils import _build_table, _merge_size_tryptic, nested_oof, _boot_ci, _diff_ci, calibration, perm_importance, \
     actionable_readout, transfer, present, per_gene_attribution
 from sklearn.metrics import roc_auc_score, average_precision_score, brier_score_loss
@@ -83,12 +83,17 @@ if fine and "localization" in intr:
         "drop",
         {**intr, "localization": coarse}, {**full, "localization": coarse}))
 
-if "structure_af" in intr and "disorder_fraction_proxy" in intr.get("composition", []):
-    comp0 = [c for c in intr["composition"] if c != "disorder_fraction_proxy"]
+if "structure_af" in intr and "disorder_fraction_foldindex" in intr.get("composition", []):
+    comp0 = [c for c in intr["composition"] if c != "disorder_fraction_foldindex"]
     ablations.append((
-        "without the sequence disorder proxy (pLDDT retained)",
+        "without the FoldIndex disorder fraction (pLDDT retained)",
         "drop",
         {**intr, "composition": comp0}, {**full, "composition": comp0}))
+
+if any(c in HEURISTIC for v in intr.values() for c in v):
+    gi, gf = ({k: [c for c in v if c not in HEURISTIC] for k, v in g.items() if set(v) - set(HEURISTIC)}
+              for g in (intr, full))
+    ablations.append(("without the rule-of-thumb features (config.HEURISTIC)", "drop", gi, gf))
 
 obs = [c for c in OBSERVED_PTM if c in df.columns]
 if obs:

@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from config import DATA_DIR, TAB_DIR
-from utils_validation import read_adat, MIN_CLEAN, ORDER
+from utils_validation import read_adat, MIN_CLEAN, ORDER, ms_class, class_sweep
 
 ORG = DATA_DIR / "organoids"
 SOMA_ADAT = sorted((ORG / "somalogic").glob("*medNormSMP*_organoids.adat"))
@@ -89,13 +89,7 @@ def annotate(t, out):
 
 
 def classify(t):
-    pe1 = t.loc[t["pe"] == 1, "p_seq"]
-    hard = float(pe1.quantile(0.25)) if len(pe1) else np.nan
-    cls = np.where(t["pep_n_unique"] == 0, "inference_locked",
-          np.where(t["pep_n_clean"] < MIN_CLEAN, "inference_limited",
-          np.where(t["p_seq"] < hard, "chemistry_limited", "confirmable")))
-    cls = np.where(t["p_seq"].isna(), "unscored", cls)
-    t["ms_class"] = cls
+    t["ms_class"], hard = ms_class(t, t.loc[t["pe"] == 1, "p_seq"])
     return t, hard
 
 
@@ -171,6 +165,8 @@ print(f"panel targets: {len(t):,} ({t['panel'].value_counts().to_dict()})")
 t = annotate(t, TAB_DIR)
 t, hard = classify(t)
 t.to_csv(TAB_DIR / "panel_audit.tsv", sep="\t", index=False)
-text = summarise(t, hard)
+sweep = []
+class_sweep(dict(tuple(t.groupby("panel"))), t.loc[t["pe"] == 1, "p_seq"], sweep)
+text = summarise(t, hard) + "\n" + "\n".join(sweep)
 (TAB_DIR / "panel_audit.txt").write_text(text)
 print(text)

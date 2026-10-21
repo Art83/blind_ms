@@ -17,14 +17,14 @@ def _ensg_from_xref(x):
     return re.findall(r"ENSG\d+", x)
 
 
-# Kyte-Doolittle hydropathy
+# Kyte-Doolittle hydropathy (Kyte & Doolittle 1982); checked against Biopython ProtParamData.kd
 KD = {
     "A": 1.8, "R": -4.5, "N": -3.5, "D": -3.5, "C": 2.5, "Q": -3.5, "E": -3.5,
     "G": -0.4, "H": -3.2, "I": 4.5, "L": 3.8, "K": -3.9, "M": 1.9, "F": 2.8,
     "P": -1.6, "S": -0.8, "T": -0.7, "W": -0.9, "Y": -1.3, "V": 4.2,
 }
 
-# monoisotopic residue masses
+# monoisotopic residue masses; checked against pyteomics std_aa_mass and the Expasy FindMod table
 MONO = {
     "G": 57.021464, "A": 71.037114, "S": 87.032028, "P": 97.052764, "V": 99.068414,
     "T": 101.047679, "C": 103.009185, "L": 113.084064, "I": 113.084064, "N": 114.042927,
@@ -33,11 +33,15 @@ MONO = {
     "U": 150.953636, "O": 237.147727,
 }
 
-# avg residue masses
+# average residue masses and water, Expasy FindMod / Compute pI/Mw table (Gasteiger et al. 2005)
 AA_MASS = dict(A=71.0788, R=156.1875, N=114.1038, D=115.0886, C=103.1388,
                E=129.1155, Q=128.1307, G=57.0519, H=137.1411, I=113.1594,
                L=113.1594, K=128.1741, M=131.1926, F=147.1766, P=97.1167,
-               S=87.0782, T=101.1051, W=186.2132, Y=163.1760, V=99.1326)
+               S=87.0782, T=101.1051, W=186.2132, Y=163.1760, V=99.1326, U=150.0388, O=237.3018)
+
+# epestfind hydropathy index, 10 * Kyte-Doolittle + 45 with the tyrosine correction (EMBOSS epestfind.c)
+PEST_HI = dict(A=63, C=70, D=10, E=10, F=72, G=41, H=13, I=90, K=6, L=82, M=64, N=10, P=29, Q=10,
+               R=0, S=36, T=38, V=87, W=36, Y=58)
 
 
 WIN = (7, 30)
@@ -46,12 +50,13 @@ GRAVY_HYDROPHILIC = -1.5
 GRAVY_HYDROPHOBIC = 1.0
 PROTON = 1.007276
 WATER = 18.010565
+WATER_AVG = 18.01524
 
 SEQUON = re.compile(r"N[^P][ST]")
 CUT = re.compile(r"(?<=[KR])(?!P)")
 
 
-# pK set for pI
+# pK set for pI: EMBOSS 6.6.0 Epk.dat (iep)
 PK_POS = {"Nterm": 8.6, "K": 10.8, "R": 12.5, "H": 6.5}
 PK_NEG = {"Cterm": 3.6, "D": 3.9, "E": 4.1, "C": 8.5, "Y": 10.1}
 
@@ -80,9 +85,9 @@ def _pep_mass(p):
     return sum(MONO.get(a, 0.0) for a in p) + WATER
 
 
-# Redundancy need to merge later.
+# average mass of a subsequence (UniProt reports the precursor mass only)
 def _mol_weight(seq):
-    return sum(AA_MASS.get(a, 0.0) for a in seq) + WATER
+    return sum(AA_MASS.get(a, 0.0) for a in seq) + WATER_AVG
 
 
 def _slow_cleave(seq, start, end):
@@ -178,37 +183,50 @@ def _low_complexity_fraction(seq, win=20, entropy_thresh=2.2):
     return low / max(n, 1)
 
 
-def _disorder_fraction_proxy(seq, win=25):
-    """Uversky-style proxy: fraction of 25-residue windows with charged
-    fraction >= 0.32 and mean Kyte-Doolittle <= 0.2."""
-    if len(seq) < win:
+FOLDINDEX_WINDOW = 51   # Prilusky et al. 2005
+
+
+def _foldindex_disorder_fraction(seq, win=FOLDINDEX_WINDOW):
+    # FoldIndex (Prilusky et al. 2005): 2.785<H> - |<R>| - 1.151, the Uversky et al. 2000 boundary.
+    # <H> is Kyte-Doolittle rescaled to 0-1, <R> is (K + R - D - E) / n. Negative = predicted unfolded.
+    # Fraction of windows with a negative index; a sequence shorter than the window is one window.
+    # Same code as hpa_to_tabula_rev/src/fasta.py.
+    n = len(seq)
+    if n == 0:
         return 0.0
-    h = [KD.get(a, 0.0) for a in seq]
-    n = dis = 0
-    for i in range(len(seq) - win + 1):
-        w = seq[i:i + win]
-        if _frac(w, set("KRDE")) >= 0.32 and sum(h[i:i + win]) / win <= 0.2:
-            dis += 1
-        n += 1
-    return dis / max(n, 1)
+    win = min(win, n)
+    h = [0.0]
+    q = [0]
+    for aa in seq:
+        h.append(h[-1] + (KD.get(aa, 0.0) + 4.5) / 9.0)
+        q.append(q[-1] + (aa in "KR") - (aa in "DE"))
+    unfolded = 0
+    for i in range(n - win + 1):
+        mean_h = (h[i + win] - h[i]) / win
+        mean_r = abs(q[i + win] - q[i]) / win
+        unfolded += (2.785 * mean_h - mean_r - 1.151) < 0
+    return unfolded / (n - win + 1)
 
 
-def _pest_features(seq):
+def _pest_features(seq, win=10, threshold=5.0):
+    # PEST-FIND as in EMBOSS epestfind (defaults: window 10, threshold +5); sequence ends count as flanks.
+    # Same code as hpa_to_tabula_rev/src/fasta.py, which reproduces the 14 motifs of the manual's EXU2_DROPS example.
     bounds = [-1] + [i for i, a in enumerate(seq) if a in _PEST_POSITIVE] + [len(seq)]
     scores, covered = [], 0
     for a, b in zip(bounds[:-1], bounds[1:]):
-        st, en = a + 1, b
-        if en - st < 12:
+        r = seq[a + 1:b]
+        if len(r) < win or not set(r) & set("DE") or "P" not in r or not set(r) & set("ST"):
             continue
-        region = seq[st:en]
-        sc = 0.22 * _frac(region, _PEST_RESIDUES) - 0.005 * len(region)
-        if sc >= 0:
-            scores.append(sc)
-            covered += en - st
-    if not scores:
-        return dict(pest_score_max=0.0, pest_score_sum=0.0, n_pest_regions=0, pest_fraction=0.0)
-    return dict(pest_score_max=max(scores), pest_score_sum=sum(scores), n_pest_regions=len(scores),
-                pest_fraction=covered / len(seq) if seq else 0.0)
+        m = [AA_MASS.get(x, 0.0) for x in r]
+        depst = 100 * (sum(w for x, w in zip(r, m) if x in _PEST_RESIDUES)
+                       - AA_MASS["E"] - AA_MASS["P"] - AA_MASS["T"]) / sum(m)
+        hydro = sum(w * PEST_HI.get(x, 0) for x, w in zip(r, m)) / sum(m)
+        scores.append(0.55 * depst - 0.5 * hydro)
+        if scores[-1] >= threshold:
+            covered += len(r)
+    potential = [s for s in scores if s >= threshold]
+    return dict(pest_score_max=max(scores) if scores else float("nan"), pest_score_sum=sum(potential),
+                n_pest_regions=len(potential), pest_fraction=covered / len(seq) if seq else 0.0)
 
 
 def sequence_composition(mature):
@@ -221,12 +239,12 @@ def sequence_composition(mature):
         aromatic_fraction=_frac(mature, set("FYW")),
         n_glyco_motif_count=_n_glyco_motifs(mature),
         low_complexity_fraction=_low_complexity_fraction(mature),
-        disorder_fraction_proxy=_disorder_fraction_proxy(mature),
+        disorder_fraction_foldindex=_foldindex_disorder_fraction(mature),
         **_pest_features(mature),
     )
 
 
-def build_features(path_uniprot, path_gene_dict, path_gene_features):
+def build_features(path_uniprot, path_gene_dict):
     df = pd.read_csv(path_uniprot, sep="\t", dtype=str, keep_default_na=False, na_values=[])
     gene_dict = pd.read_csv(path_gene_dict, sep="\t", dtype=str)
     # Columns for the job
@@ -257,7 +275,7 @@ def build_features(path_uniprot, path_gene_dict, path_gene_features):
         seq = (r[c_seq] or "").strip().upper()
         if not seq:
             continue
-        sym = (r[c_gene] or "").strip().split()[0] if r[c_gene] else None
+        sym = re.split(r"[;\s]+", r[c_gene].strip())[0] or None
         ensg = sym2ensg.get(sym) if sym else None
         if ensg is None and c_ens:
             xr = _ensg_from_xref(r[c_ens])
@@ -280,7 +298,7 @@ def build_features(path_uniprot, path_gene_dict, path_gene_features):
             pI=_pI(mature),
             n_tm=len(re.findall(r"TRANSMEM", r[c_tm])) if c_tm else 0,
             has_signal=int(bool((r[c_sig] or "").strip())) if c_sig else 0,
-            n_tryptic_7_30=_tryptic_count(seq, m_start, m_end),
+            n_tryptic_7_30=_tryptic_count(seq, start=m_start, end=m_end),
             mature_start=m_start,
             mature_end=m_end,
             mature_length=m_end - m_start + 1,
@@ -297,8 +315,7 @@ def build_features(path_uniprot, path_gene_dict, path_gene_features):
         )
         feat.update(sequence_composition(mature))
         feat.update(UA.localisation(r[c_cc], r[c_topo] if c_topo else "", r[c_go] if c_go else ""))
-        kda = (feat["mw_da"] / 1000.0) if pd.notna(feat["mw_da"]) and feat["mw_da"] else (feat["length"] * 0.11)
-        feat["tryptic_per_kda"] = round(feat["n_tryptic_7_30"] / kda, 4) if kda else float("nan")
+        feat["tryptic_per_kda"] = round(feat["n_tryptic_7_30"] / (_mol_weight(mature) / 1000.0), 4)
         rows.append(feat)
 
     feats = pd.DataFrame(rows)
@@ -328,93 +345,47 @@ def build_features(path_uniprot, path_gene_dict, path_gene_features):
               f"{feats[t.columns[1]].notna().mean():.1%}")
     for c in ("is_in_complex", "n_complexes", "in_large_complex", "n_conserved_mirna_sites",
               "n_mirna_families", "uorf_count", "has_uorf", "rbp_n_binding_rbps",
-              "rbp_hur_binding", "rbp_hnrnp_binding", "rbp_pumilio_binding", "rbp_destab_binding"):
+              "rbp_hur_binding", "rbp_hnrnp_binding", "rbp_pumilio_binding", "rbp_binding_density"):
         if c in feats.columns:
             feats[c] = feats[c].fillna(0)
-    if {"n_conserved_mirna_sites", "utr3_length"} <= set(feats.columns):
-        kb = feats["utr3_length"] / 1000.0
-        feats["mirna_site_density"] = np.where(kb > 0, feats["n_conserved_mirna_sites"] / kb, np.nan)
     return feats
 
 
 # Transcript level features
-HUMAN_CODON_W = {
-    # Phe
-    'TTT': 0.452, 'TTC': 1.000,
-    # Leu
-    'TTA': 0.128, 'TTG': 0.206, 'CTT': 0.206, 'CTC': 0.317,
-    'CTA': 0.115, 'CTG': 1.000,
-    # Ile
-    'ATT': 0.490, 'ATC': 1.000, 'ATA': 0.243,
-    # Met
-    'ATG': 1.000,
-    # Val
-    'GTT': 0.261, 'GTC': 0.419, 'GTA': 0.165, 'GTG': 1.000,
-    # Ser
-    'TCT': 0.621, 'TCC': 0.724, 'TCA': 0.483, 'TCG': 0.172,
-    'AGT': 0.483, 'AGC': 1.000,
-    # Pro
-    'CCT': 0.586, 'CCC': 1.000, 'CCA': 0.552, 'CCG': 0.207,
-    # Thr
-    'ACT': 0.480, 'ACC': 1.000, 'ACA': 0.560, 'ACG': 0.240,
-    # Ala
-    'GCT': 0.519, 'GCC': 1.000, 'GCA': 0.444, 'GCG': 0.185,
-    # Tyr
-    'TAT': 0.434, 'TAC': 1.000,
-    # Stop codons (excluded from CAI)
-    'TAA': 0.0, 'TAG': 0.0, 'TGA': 0.0,
-    # His
-    'CAT': 0.424, 'CAC': 1.000,
-    # Gln
-    'CAA': 0.346, 'CAG': 1.000,
-    # Asn
-    'AAT': 0.465, 'AAC': 1.000,
-    # Lys
-    'AAA': 0.432, 'AAG': 1.000,
-    # Asp
-    'GAT': 0.464, 'GAC': 1.000,
-    # Glu
-    'GAA': 0.427, 'GAG': 1.000,
-    # Cys
-    'TGT': 0.449, 'TGC': 1.000,
-    # Trp
-    'TGG': 1.000,
-    # Arg
-    'CGT': 0.159, 'CGC': 0.376, 'CGA': 0.200, 'CGG': 0.376,
-    'AGA': 0.753, 'AGG': 1.000,
-    # Gly
-    'GGT': 0.282, 'GGC': 0.595, 'GGA': 0.416, 'GGG': 1.000,
-}
+_B = "TCAG"
+CODON_AA = dict(zip((a + b + c for a in _B for b in _B for c in _B),
+                    "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG"))
 STOP = {"TAA", "TAG", "TGA"}
 
 
-def cai(cds):
+def codon_weights(cds_list):
+    # Sharp & Li 1987 relative adaptiveness: codon count / count of the most used synonymous codon; Met, Trp, stops excluded
+    from collections import Counter
+    n = Counter(c[i:i + 3] for c in cds_list for i in range(0, len(c) - 2, 3))
+    top = {}
+    for cod, aa in CODON_AA.items():
+        if aa not in "MW*":
+            top[aa] = max(top.get(aa, 0), n[cod])
+    return {cod: n[cod] / top[aa] for cod, aa in CODON_AA.items() if aa not in "MW*" and top[aa]}
+
+
+def cai(cds, w):
     import math
-    log_sum, n = 0.0, 0
-    for i in range(0, len(cds) - 2, 3):
-        codon = cds[i:i + 3]
-        if len(codon) < 3 or codon in STOP:
-            break
-        w = HUMAN_CODON_W.get(codon)
-        if w is not None and w > 0:
-            log_sum += math.log(w)
-            n += 1
-    return math.exp(log_sum / n) if n else 0.0
+    logs = [math.log(w[cds[i:i + 3]]) for i in range(0, len(cds) - 2, 3) if w.get(cds[i:i + 3], 0) > 0]
+    return math.exp(sum(logs) / len(logs)) if logs else float("nan")
 
 
 def kozak_score(seq, atg):
-    checks = [(-3, ("A", "G"), 3.0), (3, ("G",), 2.0), (-1, ("C",), 1.0), (-2, ("C",), 1.0),
-              (-4, ("A", "G"), 0.5), (-5, ("A", "G"), 0.5)]
-    score = total = 0.0
-    for off, ok, w in checks:
-        total += w
-        p = atg + off
-        if 0 <= p < len(seq) and seq[p] in ok:
-            score += w
-    return score / total if total else 0.0
+    # Number of the two key Kozak positions matched: purine at -3 and G at +4 (A of ATG = +1).
+    # 2 = strong, 1 = adequate, 0 = weak (Kozak 1986; Hernandez et al. 2019). NaN if -3 is not in the transcript.
+    # Same code as hpa_to_tabula_rev/src/fasta.py.
+    if atg < 3 or atg + 3 >= len(seq):
+        return float("nan")
+    return int(seq[atg - 3] in "AG") + int(seq[atg + 3] == "G")
 
 
 def find_cds(seq):
+    # Longest ATG-to-stop open reading frame of at least 30 nt; not the annotated CDS
     best = None
     for m in re.finditer("ATG", seq):
         start = m.start()
@@ -441,7 +412,7 @@ def cdna_record(ensg, seq):
     cds = seq[atg:stop]
     utr3_start = stop + 3
     utr5, utr3 = seq[:atg], seq[utr3_start:]
-    rec.update(cai=cai(cds), kozak_score=kozak_score(seq, atg), utr5_length=atg,
+    rec.update(_cds=cds, kozak_score=kozak_score(seq, atg), utr5_length=atg,
                utr3_length=max(0, L - utr3_start), cds_length=stop - atg,
                utr5_gc=((utr5.count("G") + utr5.count("C")) / len(utr5) * 100) if utr5 else float("nan"),
                utr3_gc=((utr3.count("G") + utr3.count("C")) / len(utr3) * 100) if utr3 else float("nan"),
@@ -468,6 +439,11 @@ def parse_cdna(path):
         r = cdna_record(cur, "".join(buf).upper())
         if r:
             rows.append(r)
+    # reference set for the codon weights is every canonical CDS in the file
+    w = codon_weights([r["_cds"] for r in rows if "_cds" in r])
+    for r in rows:
+        if "_cds" in r:
+            r["cai"] = cai(r.pop("_cds"), w)
     return pd.DataFrame(rows).drop_duplicates("ensg")
 
 
@@ -506,9 +482,13 @@ def targetscan(sym2ensg, ts_summary_path, ts_gene_info_path, human_id):
     df["Total num conserved sites"] = pd.to_numeric(df["Total num conserved sites"], errors="coerce").fillna(0).astype(int)
     df["_tx"] = df["Transcript ID"].astype(str).str.split(".").str[0]
     via_tx = 0
+    n_human = len(df)
     if ts_gene_info_path.exists():
         gi = pd.read_csv(ts_gene_info_path, sep="\t", on_bad_lines="skip")
         gi = gi[pd.to_numeric(gi["Species ID"], errors="coerce") == human_id]
+        # one transcript per gene: TargetScan's representative transcript, as in hpa_to_tabula_rev
+        rep = set(gi.loc[gi["Representative transcript?"] == 1, "Transcript ID"].astype(str).str.split(".").str[0])
+        df = df[df["_tx"].isin(rep)].copy()
         gi = pd.DataFrame({"_tx": gi["Transcript ID"].astype(str).str.split(".").str[0],
                            "ensg": gi["Gene ID"].astype(str).str.split(".").str[0]}).drop_duplicates("_tx")
         df = df.merge(gi, on="_tx", how="left")
@@ -520,8 +500,8 @@ def targetscan(sym2ensg, ts_summary_path, ts_gene_info_path, human_id):
     df = df.dropna(subset=["ensg"])
     agg = df.groupby("ensg").agg(n_conserved_mirna_sites=("Total num conserved sites", "sum"),
                                  n_mirna_families=("miRNA family", "nunique")).reset_index()
-    print(f"TargetScan {n_raw:,} rows, human rows {len(df) + n_unmapped:,}, mapped via Gene_info {via_tx:,}, "
-          f"via symbol {len(df) - via_tx:,}, unmapped {n_unmapped:,}; {len(agg):,} genes, "
+    print(f"TargetScan {n_raw:,} rows, human rows {n_human:,}, on representative transcripts {len(df) + n_unmapped:,}, "
+          f"mapped via Gene_info {via_tx:,}, via symbol {len(df) - via_tx:,}, unmapped {n_unmapped:,}; {len(agg):,} genes, "
           f"{int((agg['n_conserved_mirna_sites'] > 0).sum()):,} with at least one conserved site")
     return agg
 
@@ -544,23 +524,31 @@ def uorfs(sorf_path):
     return agg
 
 
-def eclip(eclip_path, gene_coords, refresh=False):
+def eclip(eclip_path, gene_coords, eclip_meta, refresh=False):
     import gzip
     cache = TAB_DIR / "eclip_binding.tsv"
+    gc = pd.read_csv(gene_coords, sep="\t", low_memory=False)
+    gc.columns = ["ensg", "chrom", "start", "end"]
+    gc["ensg"] = gc["ensg"].astype(str).str.split(".").str[0]
+    gc["chrom"] = gc["chrom"].astype(str)
+    gc = gc[gc["chrom"].str.match(r"^(\d+|X|Y|MT)$")]
     if cache.exists() and not refresh:
         b = pd.read_csv(cache, sep="\t", dtype=str, keep_default_na=False)
         binding = {e: set(r.split(";")) - {""} for e, r in zip(b["ensg"], b["rbps"])}
         print(f"eCLIP cached {cache.name}: {len(binding):,} genes with a peak")
     else:
         beds = sorted(list(eclip_path.glob("*.bed.gz")) + list(eclip_path.glob("*.bed"))) if eclip_path.exists() else []
-        if not beds or not gene_coords.exists():
-            print(f"  [eCLIP] {len(beds)} bed files, coordinates {'present' if gene_coords.exists() else 'missing'}, skipped")
+        # one peak file per experiment: the GRCh38 file ENCODE lists for replicates 1 and 2 together
+        # (file names are RBP_CELL_ACCESSION.bed.gz), as in hpa_to_tabula_rev
+        meta = pd.read_csv(eclip_meta, sep="\t", low_memory=False)
+        merged = set(meta.loc[(meta["Biological replicate(s)"].astype(str) == "1, 2")
+                             & (meta["File assembly"] == "GRCh38"), "File accession"])
+        n_all = len(beds)
+        beds = [b for b in beds if b.name.split(".")[0].split("_")[-1] in merged]
+        print(f"eCLIP {n_all} bed files in folder, {len(beds)} merged-replicate GRCh38 files used "
+              f"({len({b.name.split('_')[0] for b in beds})} RBPs)")
+        if not beds:
             return None
-        gc = pd.read_csv(gene_coords, sep="\t", low_memory=False)
-        gc.columns = ["ensg", "chrom", "start", "end"]
-        gc["ensg"] = gc["ensg"].astype(str).str.split(".").str[0]
-        gc["chrom"] = gc["chrom"].astype(str)
-        gc = gc[gc["chrom"].str.match(r"^(\d+|X|Y|MT)$")]
         genes_by_chrom = {c: (g["ensg"].values, g["start"].values.astype(int), g["end"].values.astype(int))
                           for c, g in gc.groupby("chrom")}
         binding = {}
@@ -600,10 +588,14 @@ def eclip(eclip_path, gene_coords, refresh=False):
     rows = [dict(ensg=e, rbp_n_binding_rbps=len(r),
                  rbp_hur_binding=int(any(x in {"ELAVL1", "HUR"} for x in r)),
                  rbp_hnrnp_binding=int(any(x.startswith("HNRNP") for x in r)),
-                 rbp_pumilio_binding=int(any(x in {"PUM1", "PUM2"} for x in r)),
-                 rbp_destab_binding=int(any(x in {"ZC3H12A", "TTP", "ZFP36"} for x in r)))
+                 rbp_pumilio_binding=int(any(x in {"PUM1", "PUM2"} for x in r)))
             for e, r in binding.items() if r]
-    return pd.DataFrame(rows)
+    out = pd.DataFrame(rows)
+    # bound RBPs per kb of gene span, the same region the overlap is counted over
+    span = gc.assign(span_kb=(gc["end"].astype(int) - gc["start"].astype(int) + 1) / 1000.0)[["ensg", "span_kb"]]
+    out = out.merge(span.drop_duplicates("ensg"), on="ensg", how="left")
+    out["rbp_binding_density"] = out["rbp_n_binding_rbps"] / out["span_kb"]
+    return out.drop(columns="span_kb")
 
 
 # AlphaFold

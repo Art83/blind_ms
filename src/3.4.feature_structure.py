@@ -17,7 +17,6 @@ for half-life   source(Mathieson et al. 2018 (Nat Comms) ):
 
 Note: HL doesn't enter ML given that protein has measured HL only if MS detected it
 """
-from __future__ import annotations
 import re
 import sys
 import pandas as pd
@@ -63,7 +62,8 @@ else:
     rows = []
     for r in fp.itertuples(index=False):
         if r.uniprot in pl:
-            rows.append(dict(uniprot=r.uniprot, **af_summary(pl[r.uniprot], int(r.mature_start), int(r.mature_end))))
+            rows.append(dict(uniprot=r.uniprot, afdb_model_length=max(pl[r.uniprot]),
+                             **af_summary(pl[r.uniprot], int(r.mature_start), int(r.mature_end))))
     af = pd.DataFrame(rows)
     af.to_csv(af_cache, sep="\t", index=False)
     feats = feats.merge(af, on="uniprot", how="left")
@@ -72,8 +72,17 @@ else:
                  f"{int(feats['af_plddt_mean'].notna().sum()):,} of {len(feats):,} UniProt-mapped genes covered ({cov:.1%})")
     L_res.append(
         f"median pLDDT {af['af_plddt_mean'].median():.1f}, median fraction below 50 {af['af_frac_lt50'].median():.3f}, "
-        f"fragmented entries {int(sum(1 for a, d in pl.items() if max(d) > 1400)):,}")
+        f"fragment models beyond one per accession {n_models - len(pl):,}")
     print("  " + L_res[-2])
+
+# pLDDT is indexed by residue position, so a model built on an older sequence would be misaligned
+if "afdb_model_length" in feats.columns:
+    length = feats["uniprot"].map(fp.set_index("uniprot")["length"])
+    has = feats["afdb_model_length"].notna()
+    mis = has & (feats["afdb_model_length"] != length)
+    feats.loc[mis, [c for c in feats.columns if c.startswith("af_")]] = float("nan")
+    L_res.append(f"AlphaFold model length differs from the UniProt sequence length for "
+                 f"{int(mis.sum()):,} of {int(has.sum()):,} proteins; their af_ features set to missing")
 
 # ---Half-life---
 gd = pd.read_csv(TAB_DIR / "gene_dict.tsv", sep="\t", dtype=str)

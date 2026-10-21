@@ -76,7 +76,7 @@ GROUPS = {
     "tryptic_yield":   ["n_tryptic_7_30", "tryptic_per_kda"],
     "composition":     ["cysteine_fraction", "charged_fraction", "proline_fraction",
                         "glycine_fraction", "aromatic_fraction",
-                        "low_complexity_fraction", "disorder_fraction_proxy"],
+                        "low_complexity_fraction", "disorder_fraction_foldindex"],
     "glycosylation":   ["n_glyco_motif_count"],
     "ptm":             ["n_glyco_sites", "n_disulfide", "n_lipid_sites",
                         "has_propeptide", "pep_frac_ptm_site", "pep_frac_disulfide"],
@@ -104,10 +104,10 @@ GROUPS = {
 EXCLUDED = ["Transcript count", "Transcript length (including UTRs and CDS)", "exon_count",
             "manual_gc_content", "cai", "kozak_score", "utr5_length", "utr3_length",
             "cds_length", "utr5_gc", "utr3_gc", "utr3_to_cds_ratio",
-            "n_conserved_mirna_sites", "n_mirna_families", "mirna_site_density",
+            "n_conserved_mirna_sites", "n_mirna_families",
             "uorf_count", "uorf_max_length_aa", "uorf_mean_length_aa", "has_uorf",
             "uorf_mean_phastcon", "rbp_n_binding_rbps", "rbp_hur_binding",
-            "rbp_hnrnp_binding", "rbp_pumilio_binding", "rbp_destab_binding"]
+            "rbp_hnrnp_binding", "rbp_pumilio_binding", "rbp_binding_density"]
 
 NEVER = ["pe_level", "mature_start", "mature_end", "isoform_rule",
          "loc_n_clauses", "loc_n_observed", "loc_go_n_terms", "loc_source"]
@@ -116,5 +116,10 @@ OBSERVED_PTM = ["n_glyco_sites_observed", "n_mod_res_observed", "n_disulfide_obs
                 "n_lipid_sites_observed", "n_mod_res"]
 
 HALF_LIFE_LEAK = ["hl_log2_hours"]
+
+# model features defined by a stated rule of thumb, not a published method; dropped as one block in a 5.1 ablation
+HEURISTIC = ["low_complexity_fraction", "in_large_complex",
+             "pep_n_clean", "pep_clean_per_kda", "pep_coverage_clean",
+             "pep_frac_slow_cleave", "pep_frac_hydrophilic", "pep_frac_hydrophobic"]
 
 

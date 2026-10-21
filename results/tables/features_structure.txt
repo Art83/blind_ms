@@ -1,4 +1,6 @@
 STRUCTURE AND TURNOVER FEATURES
 
-AlphaFold: cached alphafold_plddt_summary.tsv, 14,801 of 14,826 UniProt-mapped genes covered
-Half-life: 5,866 of 14,826 genes covered (39.6%), median 72 h
+AlphaFold UP000005640_9606_HUMAN_v6.tar: 23,586 models read, 20,550 accessions, 14,843 of 14,867 UniProt-mapped genes covered (99.8%)
+median pLDDT 78.2, median fraction below 50 0.157, fragment models beyond one per accession 3,036
+AlphaFold model length differs from the UniProt sequence length for 25 of 14,843 proteins; their af_ features set to missing
+Half-life: 5,871 of 14,867 genes covered (39.5%), median 72 h

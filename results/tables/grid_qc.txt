@@ -23,11 +23,25 @@ IHC_only          6786
 both_absent       3848
 
 ms_dark_candidates: 25,962
-by gtex_status:
+  by gtex_status:
   gtex_status
   not_measured       19176
   measured_absent     6786
 
 PaxDb abundance coverage among IHC-present rows:
 tissue-matched ppm: 81.7%
-tissue or whole-body ppm: 98.2%
+tissue OR whole-body ppm: 98.2%   <- abundance-conditioning coverage
+
+ten tri-source tissues only (10 tissues):
+  genes with a scored IHC call: 13,478
+  IHC-present pairs: 92,397   genes: 12,819
+  MS-dark pairs: 25,962 (28.1% of IHC-present pairs)
+  not_measured: 19,176 pairs, 3,063 genes (23.9% of IHC-present genes)
+ measured_absent: 6,786 pairs, 2,245 genes
+  best_reliability among IHC-present pairs:
+    best_reliability
+    Approved     0.476
+    Enhanced     0.198
+    Uncertain    0.195
+    Supported    0.132
+  abundance coverage among IHC-present pairs: tissue-matched 83.1%, whole-body 98.2%, either 98.2%

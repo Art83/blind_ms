@@ -7,12 +7,13 @@ Parsing the uniprot feature-table strings that the 2026 export carries into posi
 from __future__ import annotations
 import re
 
-_RANGE = re.compile(r"(SIGNAL|PROPEP|CHAIN|CARBOHYD|MOD_RES|DISULFID|LIPID|TRANSMEM)\s+([<>?]?\d+)(?:\.\.([<>?]?\d+))?")
-_KEYS = ("SIGNAL", "PROPEP", "CHAIN", "CARBOHYD", "MOD_RES", "DISULFID", "LIPID", "TRANSMEM")
+_KEYS = ("SIGNAL", "PROPEP", "CHAIN", "CARBOHYD", "MOD_RES", "DISULFID", "LIPID", "TRANSMEM", "TOPO_DOM")
+_RANGE = re.compile(r"(%s)\s+([<>?]?\d+|\?)(?:\.\.([<>?]?\d+|\?))?" % "|".join(_KEYS))
 OBSERVED_ECO = {"ECO:0000269", "ECO:0007744"}
 
 
 def _int(x):
+    # unknown positions ("?") return None and the range is dropped by ranges()
     try:
         return int(x.lstrip("<>?"))
     except (ValueError, AttributeError):
@@ -63,10 +64,10 @@ def site_positions(row, evidence="predicted"):
 
 
 def mature_range(row, length):
-    chains = ranges(row.get("Chain", ""), "CHAIN")
+    # span of all fully specified chains: a protein processed into several chains has all of them in the sample
+    chains = [(a, b) for a, b in ranges(row.get("Chain", ""), "CHAIN") if b >= a]
     if chains:
-        a, b = chains[0]
-        return max(1, a), min(length, b)
+        return max(1, min(a for a, _ in chains)), min(length, max(b for _, b in chains))
     start, end = 1, length
     sig = ranges(row.get("Signal peptide", ""), "SIGNAL")
     if sig:
@@ -80,30 +81,32 @@ def mature_range(row, length):
 
 
 # --- localisation from uniprot ---
-LOC_FLAGS = {
-    "is_secreted": ("secreted", "extracellular space", "extracellular region"),
-    "is_ecm": ("extracellular matrix", "basement membrane", "collagen"),
-    "is_membrane": ("cell membrane", "plasma membrane", "apical cell membrane",
-                   "basolateral cell membrane", "cell surface"),
-    "is_nuclear": ("nucleus", "nucleoplasm", "nucleolus", "nuclear envelope", "nuclear pore",
-                         "nuclear speckle", "nuclear body", "nuclear matrix", "nuclear lamina"),
-    "is_chromatin": ("chromosome", "chromatin", "centromere", "kinetochore", "telomere"),
+# Keyword matches on the UniProt subcellular location text (custom rule). The first eight flags use the
+# same keywords as hpa_to_tabula_rev/src/external_features.py and define n_compartments; the rest are
+# extra flags for this project.
+SHARED_LOC_FLAGS = {
+    "is_secreted": ("secreted", "extracellular"),
+    "is_membrane": ("cell membrane", "single-pass", "multi-pass"),
+    "is_nuclear": ("nucleus", "nucleoplasm", "nucleolus", "nuclei"),
     "is_cytoplasmic": ("cytoplasm", "cytosol"),
     "is_mitochondrial": ("mitochondri",),
     "is_er_golgi": ("endoplasmic reticulum", "golgi"),
+    "is_cytoskeleton": ("cytoskeleton", "microtubule"),
+    "is_projection": ("cell projection", "cilium", "axon", "growth cone", "ranvier", "dendrite", "synaptic",
+                      "synapse", "neurite", "dendritic spine", "postsynaptic", "presynaptic", "nerve terminal",
+                      "neuronal projection"),
+}
+EXTRA_LOC_FLAGS = {
+    "is_ecm": ("extracellular matrix", "basement membrane", "collagen"),
+    "is_chromatin": ("chromosome", "chromatin", "centromere", "kinetochore", "telomere"),
     "is_lysosome": ("lysosom",),
     "is_peroxisome": ("peroxisom",),
     "is_endosome": ("endosom",),
     "is_vesicle": ("cytoplasmic vesicle", "secretory vesicle", "synaptic vesicle", "vesicle membrane",
-                         "secretory granule", "zymogen granule", "melanosome", "lysosome-related"),
+                   "secretory granule", "zymogen granule", "melanosome", "lysosome-related"),
     "is_lipid_droplet": ("lipid droplet",),
-    "is_cytoskeleton": ("cytoskeleton", "microtubule", "actin", "intermediate filament", "spindle", "centrosome",
-                         "cilium basal body"),
-    "is_projection": ("cell projection", "cilium", "axon", "growth cone", "ranvier", "dendrite", "synaps",
-                         "neurite", "dendritic spine", "postsynaptic", "presynaptic", "nerve terminal",
-                         "neuronal projection", "lamellipodium", "filopodium", "flagellum"),
 }
-LOC_COMPARTMENT_FLAGS = [k for k in LOC_FLAGS if k not in ("is_membrane",)]  # for n_compartments
+LOC_FLAGS = {**SHARED_LOC_FLAGS, **EXTRA_LOC_FLAGS}
 TOPOLOGY = {   # phrase in the CC text -> class
     "multi-pass membrane protein": "multipass",
     "single-pass type i membrane protein": "single_type1",
@@ -151,8 +154,7 @@ def localisation(cc, topo_dom, go):
     for flag, keys in LOC_FLAGS.items():
         f[flag] = int(any(any(k in t for k in keys) for t in texts))
     cc_text = " ".join(c for c, _ in clauses)
-    f["is_membrane"] = int(f["is_membrane"] or "membrane" in cc_text and "membrane protein" in cc_text)
-    f["n_compartments"] = int(sum(f[k] for k in LOC_COMPARTMENT_FLAGS))
+    f["n_compartments"] = int(sum(f[k] for k in SHARED_LOC_FLAGS))
     f["is_multilocal"] = int(f["n_compartments"] > 1)
     topo = None
     for phrase, cls in TOPOLOGY.items():

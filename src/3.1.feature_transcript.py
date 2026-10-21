@@ -12,7 +12,6 @@ mart_export_fasta.txt   BioMart FASTA, cDNA of the Ensembl canonical
 
 Filter: protein_coding
 """
-from __future__ import annotations
 import pandas as pd
 from config import DATA_DIR, TAB_DIR
 from utils_features import parse_cdna
