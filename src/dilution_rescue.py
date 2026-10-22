@@ -4,7 +4,7 @@ Dilution rescue (Diagnostics).
 The original dilution covariate in model_dark (frac_pos_celltypes from IHC alone) was
 degenerate because IHC gives no cell-type proportions. This sctipt computes the
 real covariate using Tabula Sapiens cell counts bridged to HPA cell types,
-then reruns the dilution model AND reports two
+then reruns the dilution model and reports two
 diagnostics that decide whether dilution is real or unresolvable here.
 """
 from __future__ import annotations
@@ -14,7 +14,6 @@ from config import DATA_DIR, TAB_DIR, TISSUES
 PROP = DATA_DIR / "celltype_proportions.csv"
 BRIDGE = DATA_DIR / "consensus_bridge_map.csv" # comes from hpa to tabula project
 MIN_HPA_CELLTYPES = 2   # dilution resolution is bounded by IHC granularity
-SPREAD_TISSUES = ["skin", "testis"]  # the only tri-source tissues with >2 HPA cell types
 
 
 def build_covariate(out):
@@ -123,23 +122,23 @@ def run_model(out, cova, tissues=None, label="usable tissues"):
     return "\n".join(lines)
 
 
-if __name__ == "__main__":
-    cova, cov, usable, counts, unbridged = build_covariate(TAB_DIR)
-    cova.to_csv(TAB_DIR / "dilution_covariate.tsv", sep="\t", index=False)
-    unbridged.to_csv(TAB_DIR / "dilution_unbridged.tsv", sep="\t", index=False)
+cova, cov, usable, counts, unbridged = build_covariate(TAB_DIR)
+cova.to_csv(TAB_DIR / "dilution_covariate.tsv", sep="\t", index=False)
+unbridged.to_csv(TAB_DIR / "dilution_unbridged.tsv", sep="\t", index=False)
+spread = sorted(counts.index[counts["hpa_celltypes"] > MIN_HPA_CELLTYPES])
 
-    L = [f"dilution_covariate: {len(cova):,} (ensg,tissue) rows",
-         f"bridge coverage of IHC-positive calls: {cov:.1%}",
-         f"dilution-usable tissues (>= {MIN_HPA_CELLTYPES} HPA cell types): {usable}",
-         "cell types per tissue (HPA granularity bounds the test):",
-         counts.to_string(), "",
-         "=== (1) emf variance per usable tissue (is the covariate degenerate?) ===",
-         emf_variance(cova).to_string(index=False), "",
-         "=== (2) models ===",
-         run_model(TAB_DIR, cova, None, "all usable (6 tissues)"), "",
-         run_model(TAB_DIR, cova, SPREAD_TISSUES, "spread tissues only: skin+testis"), "",
-         "=== (3) top unbridged IHC-positive cell types (the 46% miss) ===",
-         unbridged.head(25).to_string(index=False)]
-    text = "\n".join(L)
-    (TAB_DIR / "dilution_summary.txt").write_text(text)
-    print(text)
+L = [f"dilution_covariate: {len(cova):,} (ensg,tissue) rows",
+     f"bridge coverage of IHC-positive calls: {cov:.1%}",
+     f"dilution-usable tissues (>= {MIN_HPA_CELLTYPES} HPA cell types): {usable}",
+     "cell types per tissue (HPA granularity bounds the test):",
+     counts.to_string(), "",
+     "=== (1) emf variance per usable tissue (is the covariate degenerate?) ===",
+     emf_variance(cova).to_string(index=False), "",
+     "=== (2) models ===",
+     run_model(TAB_DIR, cova, None, f"all usable ({len(usable)} tissues)"), "",
+     run_model(TAB_DIR, cova, spread, f"tissues with > {MIN_HPA_CELLTYPES} HPA cell types: {'+'.join(spread)}"), "",
+     f"=== (3) top unbridged IHC-positive cell types ({1 - cov:.0%} of IHC-positive calls unbridged) ===",
+     unbridged.head(25).to_string(index=False)]
+text = "\n".join(L)
+(TAB_DIR / "dilution_summary.txt").write_text(text)
+print(text)

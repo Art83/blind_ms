@@ -18,10 +18,9 @@ warnings.filterwarnings("ignore")
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
-from utils import _merge_size_tryptic, present, _cols, _boot_ci, _diff_ci
-from config import TAB_DIR, GROUPS, ABUNDANCE_SOURCE, TISSUES, EXCLUDED
+from utils import _merge_size_tryptic, present, _cols, _boot_ci, _diff_ci, gbm, _auc
+from config import TAB_DIR, GROUPS, ABUNDANCE_SOURCE, TISSUES, EXCLUDED, N_SPLITS
 
-N_SPLITS = 5
 TISSUES = [t for t, s in TISSUES.items() if s["gtex"]]
 ABUNDANCE_GROUP = {"abundance": ["log_abundance"]}
 
@@ -40,23 +39,14 @@ def build_table(out):
 
 def oof(df, groups, seed=0):
     from sklearn.model_selection import StratifiedGroupKFold
-    from sklearn.ensemble import HistGradientBoostingClassifier
     cols = _cols(groups) + [f"tissue_{t}" for t in TISSUES]
     X = df[cols].astype(float).values
     y = df["gtex_detected"].values
     cv = StratifiedGroupKFold(N_SPLITS, shuffle=True, random_state=seed)
     p = np.full(len(df), np.nan)
     for tr, te in cv.split(X, y, groups=df["ensg"].values):
-        m = HistGradientBoostingClassifier(max_iter=300, learning_rate=0.05, max_depth=4,
-                                           random_state=0).fit(X[tr], y[tr])
-        p[te] = m.predict_proba(X[te])[:, 1]
+        p[te] = gbm().fit(X[tr], y[tr]).predict_proba(X[te])[:, 1]
     return p
-
-
-def _auc(y, p):
-    from sklearn.metrics import roc_auc_score
-    y = np.asarray(y)
-    return float(roc_auc_score(y, p)) if len(np.unique(y)) > 1 else float("nan")
 
 
 df = build_table(TAB_DIR)

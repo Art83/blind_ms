@@ -7,15 +7,10 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from config import ABUNDANCE_SOURCE, TAB_DIR, GTEX_MEDIAN, TISSUES
+from utils import _auc
 
 TRI = [t for t, s in TISSUES.items() if s["gtex"]]
 PAIRED = {t: s["gtex"] for t, s in TISSUES.items() if s["gtex"] and len(s["gtex"]) == 2}
-
-
-def _auc(y, x):
-    from sklearn.metrics import roc_auc_score
-    y = np.asarray(y); x = np.asarray(x, dtype=float)
-    return float(roc_auc_score(y, x)) if len(np.unique(y)) > 1 else float("nan")
 
 
 def _kappa(a, b):

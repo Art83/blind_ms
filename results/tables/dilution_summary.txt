@@ -25,28 +25,28 @@ pancreas 13463   1.000 0.474            0.495
 
 === (2) models ===
 --- DILUTION model [all usable (6 tissues)] ---
-rows 37,735  (6 tissues, 9,115 genes), measured_absent frac 0.087
+rows 37,755  (6 tissues, 9,122 genes), measured_absent frac 0.087
 emf by outcome (median | std):
   gtex_detected=0:  median 1.000  std 0.361
   gtex_detected=1:  median 1.000  std 0.367
-AUC 0.8661  | coef (gene-clustered SE):
-               log_abundance  beta=+1.675  p=0.00e+00
-    expressing_mass_fraction  beta=-0.005  p=8.24e-01
-                 log_tryptic  beta=+0.351  p=1.37e-24
-                        n_tm  beta=+0.082  p=5.07e-03
+AUC 0.8660  | coef (gene-clustered SE):
+               log_abundance  beta=+1.676  p=0.00e+00
+    expressing_mass_fraction  beta=-0.004  p=8.63e-01
+                 log_tryptic  beta=+0.353  p=8.69e-25
+                        n_tm  beta=+0.083  p=4.72e-03
 
---- DILUTION model [spread tissues only: skin+testis] ---
-rows 11,536  (2 tissues, 8,251 genes), measured_absent frac 0.079
+--- DILUTION model [tissues with > 2 HPA cell types: lung+skin+testis] ---
+rows 18,726  (3 tissues, 8,671 genes), measured_absent frac 0.082
 emf by outcome (median | std):
-  gtex_detected=0:  median 0.556  std 0.427
-  gtex_detected=1:  median 0.972  std 0.448
-AUC 0.8737  | coef (gene-clustered SE):
-               log_abundance  beta=+1.569  p=5.78e-175
-    expressing_mass_fraction  beta=+0.084  p=3.91e-02
-                 log_tryptic  beta=+0.326  p=1.14e-13
-                        n_tm  beta=+0.046  p=2.16e-01
+  gtex_detected=0:  median 0.991  std 0.408
+  gtex_detected=1:  median 0.997  std 0.413
+AUC 0.8703  | coef (gene-clustered SE):
+               log_abundance  beta=+1.626  p=1.25e-232
+    expressing_mass_fraction  beta=+0.040  p=2.38e-01
+                 log_tryptic  beta=+0.365  p=8.00e-21
+                        n_tm  beta=+0.066  p=5.84e-02
 
-=== (3) top unbridged IHC-positive cell types (the 46% miss) ===
+=== (3) top unbridged IHC-positive cell types (46% of IHC-positive calls unbridged) ===
          tissue                   cell_type  n_ihc_pos_calls
          testis                Leydig cells             9007
           colon             glandular cells             8867

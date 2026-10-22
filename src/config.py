@@ -68,6 +68,17 @@ ISOFORM_PICK = "longest"
 # paxdb related variable. whole body ("global") vs "tissue"
 ABUNDANCE_SOURCE = "global"
 
+# ML settings (5.1, 5.2)
+N_SPLITS = 5
+N_INNER = 3
+GBM_MAX_ITER = 300
+GBM_DEFAULT = (4, 0.05)   # (max_depth, learning_rate); ablations and 5.2 use it fixed
+GRID = [(d, lr) for d in (3, 4, 6) for lr in (0.03, 0.05, 0.1)]
+SEL_THRESH = 0.8
+N_BOOT_SEL = 50
+N_BOOT_CI = 1000
+N_PERM = 20
+
 # Features for ML
 GROUPS = {
     "size":            ["length", "mw_da", "mature_length"],

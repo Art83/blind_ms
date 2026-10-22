@@ -100,57 +100,55 @@ def _partial_spear(y, x, controls):
     return r, p, len(d)
 
 
-if __name__ == "__main__":
-    feats = pd.read_csv(TAB_DIR / "features_protein.tsv", sep="\t")
-    per_gene, n_raw, ensp_hit, map_rate = observed_peptides()
-    gtex = gene_level_gtex(TAB_DIR)
+feats = pd.read_csv(TAB_DIR / "features_protein.tsv", sep="\t")
+per_gene, n_raw, ensp_hit, map_rate = observed_peptides()
+gtex = gene_level_gtex(TAB_DIR)
 
-    df = feats.merge(per_gene, on="ensg", how="left")
-    df["pa_observed"] = df["pa_n_peptides"].notna().astype(int)
-    df["pa_n_peptides"] = df["pa_n_peptides"].fillna(0)
-    df["pa_n_proteotypic"] = df["pa_n_proteotypic"].fillna(0)
-    df = df.merge(gtex, on="ensg", how="left")
-    df["log_len"] = np.log10(df["length"].clip(lower=1))
-    df["log_pa"] = np.log10(df["pa_n_peptides"].clip(lower=1) + 1)
-    df["log_tryptic"] = np.log10(df["n_tryptic_7_30"].clip(lower=1))
-    df.to_csv(TAB_DIR / "peptideatlas_per_gene.tsv", sep="\t", index=False)
+df = feats.merge(per_gene, on="ensg", how="left")
+df["pa_observed"] = df["pa_n_peptides"].notna().astype(int)
+df["pa_n_peptides"] = df["pa_n_peptides"].fillna(0)
+df["pa_n_proteotypic"] = df["pa_n_proteotypic"].fillna(0)
+df = df.merge(gtex, on="ensg", how="left")
+df["log_len"] = np.log10(df["length"].clip(lower=1))
+df["log_pa"] = np.log10(df["pa_n_peptides"] + 1)
+df["log_tryptic"] = np.log10(df["n_tryptic_7_30"].clip(lower=1))
+df.to_csv(TAB_DIR / "peptideatlas_per_gene.tsv", sep="\t", index=False)
 
-    L = ["PEPTIDEATLAS VALIDATION (human build 502, independent of GTEx)", ""]
-    L += ["coverage:",
-          f"pep2prot rows: {n_raw:,}   rows with ENSP: {ensp_hit:.1%}",
-          f"ENSP->ENSG mapping rate: {map_rate:.1%}",
-          f"genes with >=1 observed peptide: {int(df['pa_observed'].sum()):,} "
-          f"/ {len(df):,} ({df['pa_observed'].mean():.1%})",
-          f"median observed peptides (observed genes): "
-          f"{df.loc[df['pa_observed']==1,'pa_n_peptides'].median():.0f}", ""]
+L = ["PEPTIDEATLAS VALIDATION (human build 502, independent of GTEx)", ""]
+L += ["coverage:",
+      f"pep2prot rows: {n_raw:,}   rows with ENSP: {ensp_hit:.1%}",
+      f"ENSP->ENSG mapping rate: {map_rate:.1%}",
+      f"genes with >=1 observed peptide: {int(df['pa_observed'].sum()):,} "
+      f"/ {len(df):,} ({df['pa_observed'].mean():.1%})",
+      f"median observed peptides (observed genes): "
+      f"{df.loc[df['pa_observed']==1,'pa_n_peptides'].median():.0f}", ""]
 
-    # cross source concordance
-    has_gtex = df["frac_measured"].notna()
-    L.append("1. cross-source: GTEx vs PeptideAtlas")
-    r, p, n = _spear(df.loc[has_gtex, "frac_measured"], df.loc[has_gtex, "log_pa"])
-    L.append(f"Spearman(frac_measured GTEx, log PeptideAtlas peptides): r={r:+.3f} p={p:.1e} n={n:,}")
-    # genes IHC-present but GTEx-dark everywhere vs detectable
-    dark = df[has_gtex & (df["frac_measured"] == 0)]
-    bright = df[has_gtex & (df["frac_measured"] > 0)]
-    L.append(f"median PeptideAtlas peptides:  GTEx-dark genes {dark['pa_n_peptides'].median():.0f}"
-             f"  vs GTEx-detectable {bright['pa_n_peptides'].median():.0f}")
-    L.append(f"fraction never observed in PeptideAtlas:  GTEx-dark {1-dark['pa_observed'].mean():.1%}"
-             f"  vs GTEx-detectable {1-bright['pa_observed'].mean():.1%}")
-    L.append("")
+# cross source concordance
+has_gtex = df["frac_measured"].notna()
+L.append("1. cross-source: GTEx vs PeptideAtlas")
+r, p, n = _spear(df.loc[has_gtex, "frac_measured"], df.loc[has_gtex, "log_pa"])
+L.append(f"Spearman(frac_measured GTEx, log PeptideAtlas peptides): r={r:+.3f} p={p:.1e} n={n:,}")
+# genes IHC-present but GTEx-dark everywhere vs detectable
+dark = df[has_gtex & (df["frac_measured"] == 0)]
+bright = df[has_gtex & (df["frac_measured"] > 0)]
+L.append(f"median PeptideAtlas peptides:  GTEx-dark genes {dark['pa_n_peptides'].median():.0f}"
+         f"  vs GTEx-detectable {bright['pa_n_peptides'].median():.0f}")
+L.append(f"fraction never observed in PeptideAtlas:  GTEx-dark {1-dark['pa_observed'].mean():.1%}"
+         f"  vs GTEx-detectable {1-bright['pa_observed'].mean():.1%}")
+L.append("")
 
-    # mechanism: in-silico tryptic predicts observed peptides
-    obs = df[df["pa_observed"] == 1]
-    L.append("2. mechanism: in-silico tryptic yield vs observed peptide count (observed genes)")
-    r, p, n = _spear(obs["log_tryptic"], obs["log_pa"])
-    L.append(f"Spearman(log in-silico tryptic, log observed): r={r:+.3f} p={p:.1e} n={n:,}  [partly length-driven]")
-    r, p, n = _partial_spear(obs["log_pa"], obs["log_tryptic"],
-                             [obs["median_log_abundance"], obs["log_len"]])
-    L.append(f"partial (control abundance + length): r={r:+.3f} p={p:.1e} n={n:,}")
-    if "tryptic_per_kda" in obs.columns:
-        r, p, n = _partial_spear(obs["log_pa"], obs["tryptic_per_kda"],
-                                 [obs["median_log_abundance"], obs["log_len"]])
-        L.append(f"size-normalised tryptic_per_kda (control abundance+length): r={r:+.3f} p={p:.1e} n={n:,}")
+# mechanism: in-silico tryptic predicts observed peptides
+obs = df[df["pa_observed"] == 1]
+L.append("2. mechanism: in-silico tryptic yield vs observed peptide count (observed genes)")
+r, p, n = _spear(obs["log_tryptic"], obs["log_pa"])
+L.append(f"Spearman(log in-silico tryptic, log observed): r={r:+.3f} p={p:.1e} n={n:,}  [partly length-driven]")
+r, p, n = _partial_spear(obs["log_pa"], obs["log_tryptic"],
+                         [obs["median_log_abundance"], obs["log_len"]])
+L.append(f"partial (control abundance + length): r={r:+.3f} p={p:.1e} n={n:,}")
+r, p, n = _partial_spear(obs["log_pa"], obs["tryptic_per_kda"],
+                         [obs["median_log_abundance"], obs["log_len"]])
+L.append(f"size-normalised tryptic_per_kda (control abundance+length): r={r:+.3f} p={p:.1e} n={n:,}")
 
-    text = "\n".join(L)
-    (TAB_DIR / "peptideatlas_validation.txt").write_text(text)
-    print(text)
+text = "\n".join(L)
+(TAB_DIR / "peptideatlas_validation.txt").write_text(text)
+print(text)

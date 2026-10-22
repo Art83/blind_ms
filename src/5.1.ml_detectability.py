@@ -6,7 +6,7 @@ tri-source tissue), does GTEx shotgun MS ever detect it? y=0 = present but MS-da
 One row per gene and split with StratifiedGroupKFold grouped by gene.
 
 Two main models: intrinsic (sequence/structure/localisation/complex, no abundance)
-and +abundance.
+and the same as above +abundance.
 
 Feature selection: nested CV, with stability selection run inside each outer training fold
 All imputation/scaling is fit inside the fold. Correlated near-duplicate
@@ -22,7 +22,9 @@ import warnings
 
 warnings.filterwarnings("ignore")
 import pandas as pd
-from config import GROUPS, EXCLUDED, OBSERVED_PTM, HALF_LIFE_LEAK, HEURISTIC, TAB_DIR
+import statsmodels.api as sm
+from config import GROUPS, EXCLUDED, OBSERVED_PTM, HALF_LIFE_LEAK, HEURISTIC, TAB_DIR, \
+    SEL_THRESH, N_PERM, N_INNER, GRID, GBM_DEFAULT
 from utils import _build_table, _merge_size_tryptic, nested_oof, _boot_ci, _diff_ci, calibration, perm_importance, \
     actionable_readout, transfer, present, per_gene_attribution
 from sklearn.metrics import roc_auc_score, average_precision_score, brier_score_loss
@@ -30,18 +32,7 @@ from sklearn.metrics import roc_auc_score, average_precision_score, brier_score_
 PEPTIDE_GROUPS = ("proteotypicity", "peptide_chemistry")
 PTM_GROUPS = ("ptm",)
 ABUNDANCE_GROUP = {"abundance": ["log_abundance"]}
-SEL_THRESH = 0.8
-N_BOOT_SEL = 50
-N_BOOT_CI = 1000
-N_PERM = 20
-N_SPLITS = 5
-
-# Fine tuning.
-TUNE = True
-
-GRID = [(d, lr) for d in (3, 4, 6) for lr in (0.03, 0.05, 0.1)]
-GBM_DEFAULT = (4, 0.05)
-N_INNER = 3
+TUNE = True   # nested hyperparameter tuning for the three main models; ablations use GBM_DEFAULT
 
 df = _build_table(TAB_DIR).dropna(subset=["y", "log_abundance"]).reset_index(drop=True)
 y = df["y"].values
@@ -54,14 +45,14 @@ prac = _merge_size_tryptic(present({**GROUPS, "translation": trans}, df)) if tra
 L = ["MS-DETECTABILITY PREDICTOR (nested CV, gene-grouped, bootstrap CIs)", "",
      f"genes: {len(df):,}   positive rate (detected somewhere): {y.mean():.3f}   "
      f"MS-dark n={int((y == 0).sum()):,}",
-     f"excluded a priori (translation regulation): {len(EXCLUDED)} features",
+     f"excluded from the intrinsic model (translation regulation, used only by the practical model): {len(EXCLUDED)} features",
      f"selection: stability >= {SEL_THRESH} inside each outer fold; "
      f"reported metrics are the selected model's", ""]
 
-oof_i_gbm, oof_i_log, sel_i, hp_i = nested_oof(df, intr, N_SPLITS, GBM_DEFAULT, GRID, N_INNER, tune=TUNE)
-oof_f_gbm, oof_f_log, sel_f, hp_f = nested_oof(df, full, N_SPLITS, GBM_DEFAULT, GRID, N_INNER, tune=TUNE)
+oof_i_gbm, oof_i_log, sel_i, hp_i = nested_oof(df, intr, tune=TUNE)
+oof_f_gbm, oof_f_log, sel_f, hp_f = nested_oof(df, full, tune=TUNE)
 if prac is not None:
-    oof_p_gbm, oof_p_log, sel_p, hp_p = nested_oof(df, prac, N_SPLITS, GBM_DEFAULT, GRID, N_INNER, tune=TUNE)
+    oof_p_gbm, oof_p_log, sel_p, hp_p = nested_oof(df, prac, tune=TUNE)
 
 ablations = []
 for name, drop in (("peptide-level groups (proteotypicity, peptide_chemistry)", PEPTIDE_GROUPS),
@@ -105,8 +96,7 @@ if hl:
         "with Mathieson half-life added",
         "add",
         {**intr, "half_life": hl}, {**full, "half_life": hl}))
-abl_oof = [(lab, kind, nested_oof(df, gi, N_SPLITS, GBM_DEFAULT, GRID, N_INNER,)[0], nested_oof(df, gf, N_SPLITS, GBM_DEFAULT, GRID, N_INNER,)[0]) for lab, kind, gi, gf in
-           ablations]
+abl_oof = [(lab, kind, nested_oof(df, gi)[0], nested_oof(df, gf)[0]) for lab, kind, gi, gf in ablations]
 
 L.append("=== performance (nested out-of-fold, GBM 95% bootstrap CI) ===")
 models = [("intrinsic (no abundance, no translation block)", oof_i_gbm)]
@@ -157,18 +147,12 @@ if hl:
     L.append("=== half-life, covered subset only (value, not coverage) ===")
     L.append(f"genes with a Mathieson value: {len(cov):,} of {len(df):,} ({len(cov) / len(df):.1%}), "
              f"MS-dark among them {(cov['y'] == 0).mean():.1%} vs {(df['y'] == 0).mean():.1%} overall")
-    try:
-        import statsmodels.api as sm
-
-        Z = pd.DataFrame({"hl": (cov["hl_log2_hours"] - cov["hl_log2_hours"].mean()) / cov["hl_log2_hours"].std(),
-                          "ab": (cov["log_abundance"] - cov["log_abundance"].mean()) / cov["log_abundance"].std()})
-        fit = sm.Logit(cov["y"].values, sm.add_constant(Z)).fit(disp=0)
-        L.append(
-            f"logit(detected) ~ half-life + abundance: half-life b={fit.params['hl']:+.3f} p={fit.pvalues['hl']:.1e}, "
-            f"abundance b={fit.params['ab']:+.3f} p={fit.pvalues['ab']:.1e}")
-        L.append("reading: the coverage of a pulse-SILAC dataset is MS detectability.")
-    except Exception as e:
-        L.append(f"covered-subset fit failed ({e.__class__.__name__})")
+    Z = pd.DataFrame({"hl": (cov["hl_log2_hours"] - cov["hl_log2_hours"].mean()) / cov["hl_log2_hours"].std(),
+                      "ab": (cov["log_abundance"] - cov["log_abundance"].mean()) / cov["log_abundance"].std()})
+    fit = sm.Logit(cov["y"].values, sm.add_constant(Z)).fit(disp=0)
+    L.append(
+        f"logit(detected) ~ half-life + abundance: half-life b={fit.params['hl']:+.3f} p={fit.pvalues['hl']:.1e}, "
+        f"abundance b={fit.params['ab']:+.3f} p={fit.pvalues['ab']:.1e}")
     L.append("")
 L.append("calibration (+abundance GBM, quantile bins mean_pred->obs):")
 L.append("  " + "  ".join(f"{mp:.2f}->{fp:.2f}" for mp, fp in calibration(y, oof_f_gbm)))
@@ -208,13 +192,12 @@ pred["tryptic_quartile"] = pd.qcut(df["n_tryptic_7_30"], 4,
                                    labels=["Q1", "Q2", "Q3", "Q4"]).astype(str)
 pred = pred.merge(attr, on="ensg", how="left")
 pred.to_csv(TAB_DIR / "ml_per_gene_predictions.tsv", sep="\t", index=False)
-L.append("dominant 'why MS-dark' reason (per-gene logistic attribution):")
-L.append(attr["top_dark_reason"].value_counts().to_string())
-if "length" in df.columns:
-    d2 = df.merge(attr[["ensg", "top_dark_reason"]], on="ensg", how="left")
-    L.append("")
-    L.append(f"size-direction check: median length all {d2['length'].median():.0f} aa; "
-             f"size-flagged-dark {d2.loc[d2['top_dark_reason'] == 'size', 'length'].median():.0f} aa ")
+d2 = df[df["y"] == 0].merge(attr[["ensg", "top_dark_reason"]], on="ensg", how="left")
+L.append(f"dominant 'why MS-dark' reason (per-gene logistic attribution, {len(d2):,} MS-dark genes):")
+L.append(d2["top_dark_reason"].value_counts().to_string())
+L.append("")
+L.append(f"size-direction check: median length all genes {df['length'].median():.0f} aa; "
+         f"MS-dark genes flagged for size {d2.loc[d2['top_dark_reason'] == 'size', 'length'].median():.0f} aa")
 
 text = "\n".join(L)
 (TAB_DIR / "ml_summary.txt").write_text(text)

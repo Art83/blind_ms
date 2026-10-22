@@ -5,7 +5,8 @@ from typing import Tuple, Any
 
 import pandas as pd
 import numpy as np
-from config import TISSUES, SUBSITE_AGG, IHC_ABSENT, IHC_PRESENT, RELIABILITY_ORDER, PAXDB_DIR, ISOFORM_PICK
+from config import TISSUES, SUBSITE_AGG, IHC_ABSENT, IHC_PRESENT, RELIABILITY_ORDER, PAXDB_DIR, ISOFORM_PICK, \
+    N_SPLITS, N_INNER, GBM_MAX_ITER, GBM_DEFAULT, GRID, SEL_THRESH, N_BOOT_SEL, N_BOOT_CI, N_PERM
 
 
 # General handling
@@ -368,6 +369,8 @@ def _report(m) -> str:
 # PAxdb vs gtex weight
 def _auc(y, x):
     from sklearn.metrics import roc_auc_score
+    y = np.asarray(y)
+    x = np.asarray(x, dtype=float)
     m = np.isfinite(x)
     return float(roc_auc_score(y[m], x[m])) if len(np.unique(y[m])) > 1 else float("nan")
 
@@ -424,7 +427,12 @@ def _merge_size_tryptic(groups):
     return g
 
 
-def select_groups(df_tr, groups, thresh=0.8, n_boot=50, seed=0):
+def gbm(d=GBM_DEFAULT[0], lr=GBM_DEFAULT[1]):
+    from sklearn.ensemble import HistGradientBoostingClassifier
+    return HistGradientBoostingClassifier(max_iter=GBM_MAX_ITER, learning_rate=lr, max_depth=d, random_state=0)
+
+
+def select_groups(df_tr, groups, thresh=SEL_THRESH, n_boot=N_BOOT_SEL, seed=0):
     from sklearn.linear_model import LogisticRegression
     from sklearn.preprocessing import StandardScaler
     from sklearn.impute import SimpleImputer
@@ -451,15 +459,14 @@ def _cols(groups):
     return [c for v in groups.values() for c in v]
 
 
-def nested_oof(df, groups, n_splits, default, grid, n_inner, seed=0, tune=False):
+def nested_oof(df, groups, seed=0, tune=False):
     from sklearn.model_selection import StratifiedGroupKFold
-    from sklearn.ensemble import HistGradientBoostingClassifier
     from sklearn.linear_model import LogisticRegression
     from sklearn.pipeline import make_pipeline
     from sklearn.preprocessing import StandardScaler
     from sklearn.impute import SimpleImputer
 
-    cv = StratifiedGroupKFold(n_splits, shuffle=True, random_state=seed)
+    cv = StratifiedGroupKFold(N_SPLITS, shuffle=True, random_state=seed)
     y = df["y"].values
     grp = df["ensg"].values
     oof_gbm = np.full(len(df), np.nan)
@@ -474,19 +481,17 @@ def nested_oof(df, groups, n_splits, default, grid, n_inner, seed=0, tune=False)
         scols = _cols({g: groups[g] for g in selected})
         Xtr = dtr[scols].astype(float).values
         Xte = dte[scols].astype(float).values
-        d, lr = tune_gbm(Xtr, dtr["y"].values, dtr["ensg"].values, default, grid, n_inner, seed) if tune else default
+        d, lr = tune_gbm(Xtr, dtr["y"].values, dtr["ensg"].values, seed) if tune else GBM_DEFAULT
         chosen.append((d, lr))
-        gbm = HistGradientBoostingClassifier(max_iter=300, learning_rate=lr,
-                                             max_depth=d, random_state=0).fit(Xtr, dtr["y"].values)
-        oof_gbm[te] = gbm.predict_proba(Xte)[:, 1]
+        oof_gbm[te] = gbm(d, lr).fit(Xtr, dtr["y"].values).predict_proba(Xte)[:, 1]
         pipe = make_pipeline(SimpleImputer(strategy="median"), StandardScaler(),
                              LogisticRegression(max_iter=2000)).fit(Xtr, dtr["y"].values)
         oof_log[te] = pipe.predict_proba(Xte)[:, 1]
-    sel_freq = {g: sel_count[g] / n_splits for g in groups}
+    sel_freq = {g: sel_count[g] / N_SPLITS for g in groups}
     return oof_gbm, oof_log, sel_freq, chosen
 
 
-def _boot_ci(y, p, fn, n=1000, seed=1):
+def _boot_ci(y, p, fn, n=N_BOOT_CI, seed=1):
     rng = np.random.default_rng(seed)
     vals = []
     for _ in range(n):
@@ -497,7 +502,7 @@ def _boot_ci(y, p, fn, n=1000, seed=1):
     return float(fn(y, p)), float(np.percentile(vals, 2.5)), float(np.percentile(vals, 97.5))
 
 
-def _diff_ci(y, p_a, p_b, fn, n=1000, seed=2):
+def _diff_ci(y, p_a, p_b, fn, n=N_BOOT_CI, seed=2):
     rng = np.random.default_rng(seed)
     d = []
     for _ in range(n):
@@ -519,15 +524,13 @@ def calibration(y, p):
     return list(zip(mp, fp))
 
 
-def perm_importance(df, groups, n_rep=20, seed=0):
-    from sklearn.ensemble import HistGradientBoostingClassifier
+def perm_importance(df, groups, n_rep=N_PERM, seed=0):
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import roc_auc_score
     cols = _cols(groups)
     Xtr, Xte, ytr, yte = train_test_split(df[cols].astype(float).values, df["y"].values,
                                           test_size=0.3, stratify=df["y"].values, random_state=seed)
-    mdl = HistGradientBoostingClassifier(max_iter=300, learning_rate=0.05,
-                                         max_depth=4, random_state=0).fit(Xtr, ytr)
+    mdl = gbm().fit(Xtr, ytr)
     base = roc_auc_score(yte, mdl.predict_proba(Xte)[:, 1])
     rng = np.random.default_rng(seed)
     idx = {c: i for i, c in enumerate(cols)}
@@ -613,18 +616,16 @@ def actionable_readout(df, oof_intrinsic):
     return "\n".join(L)
 
 
-def tune_gbm(Xtr, ytr, gtr, default, grid, n_inner, seed=0):
+def tune_gbm(Xtr, ytr, gtr, seed=0):
     from sklearn.model_selection import StratifiedGroupKFold
-    from sklearn.ensemble import HistGradientBoostingClassifier
     from sklearn.metrics import roc_auc_score
-    inner = StratifiedGroupKFold(n_inner, shuffle=True, random_state=seed)
+    inner = StratifiedGroupKFold(N_INNER, shuffle=True, random_state=seed)
     splits = list(inner.split(Xtr, ytr, groups=gtr))
-    best, best_auc = default, -1.0
-    for d, lr in grid:
+    best, best_auc = GBM_DEFAULT, -1.0
+    for d, lr in GRID:
         aucs = []
         for a, b in splits:
-            m = HistGradientBoostingClassifier(max_iter=300, learning_rate=lr, max_depth=d,
-                                               random_state=0).fit(Xtr[a], ytr[a])
+            m = gbm(d, lr).fit(Xtr[a], ytr[a])
             aucs.append(roc_auc_score(ytr[b], m.predict_proba(Xtr[b])[:, 1]))
         if np.mean(aucs) > best_auc:
             best, best_auc = (d, lr), float(np.mean(aucs))
